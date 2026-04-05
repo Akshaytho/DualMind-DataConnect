@@ -1,10 +1,12 @@
-# DualMind — Building DataConnect
+# DataConnect — Build Conversation
 
-**Mind A:** Kiran (Backend/Payments)
-**Mind B:** Arjun (Systems/Data Infra)
+**Mind A:** Kiran (The Pragmatist)
+**Mind B:** Arjun (The Architect)
+**Project:** DataConnect — Verified Natural-Language SQL Engine
 
 ---
+
 ## Summary
-_Fresh start. Building DataConnect from spec._
+_Fresh start. Building from the PDF spec._
 
 ---

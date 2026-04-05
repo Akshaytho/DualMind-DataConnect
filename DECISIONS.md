@@ -1,6 +1,8 @@
 # Locked Decisions
-- D1: Provider-agnostic via litellm (users bring own key)
-- D2: Name in single config (easy rename)
-- D3: 3-layer architecture (Scanner → Router → Verifier)
-- D4: BIRD benchmark for accuracy testing
-- D5: Read-only queries only (SELECT)
+- D1: Three-layer architecture (Scanner → Router → Verifier)
+- D2: Tech stack as specified in TASK.md
+- D3: BYOK via litellm — support Anthropic, OpenAI, Google, Ollama, any OpenAI-compatible
+- D4: BIRD Mini-Dev benchmark for accuracy testing
+- D5: Name stored in config.py only — easily changeable
+- D6: Read-only SQL only — no writes ever
+- D7: 30 coding rules in CODING_RULES.md

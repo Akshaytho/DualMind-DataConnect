@@ -1,2 +1,2 @@
 # User File — Akshay
-Token in bridge/.secrets (gitignored)
+Token in bridge/.secrets (gitignored).

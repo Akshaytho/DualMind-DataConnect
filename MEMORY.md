@@ -1,32 +1,30 @@
-# Shared Memory — DataConnect Build
+# Shared Memory — DataConnect
 
-## Project Name
-DataConnect (changeable in src/dataconnect/config.py)
-
-## Tech Stack (LOCKED)
-- Python 3.11+, SQLAlchemy 2.0, pydantic v2
-- litellm (provider-agnostic LLM), sentence-transformers, FAISS
-- NetworkX, sqlparse, FastAPI, Typer, SQLite
-- pytest, ruff, uv
+## Architecture (from spec)
+- Layer 1: Scanner (schema + profiling + relationship discovery + semantic descriptions)
+- Layer 2: Router (embeddings + graph + LLM cross-check)
+- Layer 3: Verifier (6 deterministic checks + confidence scoring)
 
 ## Code Map
 _Update as files are created:_
+- (none yet)
 
-## Decisions
-_Log every architectural decision:_
+## Tech Stack (locked)
+- Python 3.11+, SQLAlchemy 2.0, sentence-transformers, FAISS, NetworkX
+- sqlparse, SQLite, FastAPI, pydantic v2, litellm, pytest+hypothesis
 
-## Benchmark
-- BIRD-SQL mini-dev (11 databases, 500 questions, known SQL)
-- Adventureworks PostgreSQL (68 tables)
-- Track: execution accuracy (EX), valid efficiency score (VES)
+## Key Decisions
+- BYOK: users bring own API key via litellm
+- Name in ONE place: config.py → PROJECT_NAME
+- Read-only SQL only. No writes ever.
+- BIRD benchmark for accuracy testing (Mini-Dev 500, PostgreSQL format)
 
-## Security Checklist
-- [ ] SELECT-only enforcement
-- [ ] SQL injection prevention
-- [ ] API key handling (.env only)
-- [ ] Connection string protection
-- [ ] Row limits
-- [ ] Query timeouts
-- [ ] Rate limiting
-- [ ] CORS
-- [ ] Input sanitization
+## Security Rules (from CODING_RULES.md)
+- No hardcoded keys. No telemetry. No eval(). Read-only SQL. Pin deps.
+- See CODING_RULES.md for full list (30 rules)
+
+## Patterns & Conventions
+_Add as we build:_
+
+## Known Bugs & Tech Debt
+_Track here:_

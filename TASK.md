@@ -1,46 +1,88 @@
-# TASK: Build DataConnect (name changeable via config)
+# DataConnect — Verified Natural-Language SQL Engine
 
-## What It Is
-Open-source Python framework: connect to PostgreSQL, auto-understand structure, query in plain English, get verified confidence-scored SQL results.
+## IMPORTANT: Name Policy
+The project is called "DataConnect" everywhere in code, docs, and conversation.
+The name MUST be stored in exactly ONE place: `workspace/dataconnect/config.py → PROJECT_NAME = "DataConnect"`
+If we ever need to change the name, we change that ONE constant and nothing else breaks.
 
-## Architecture (3 Layers)
-- Layer 1 Scanner: SQLAlchemy schema extraction, data profiling, relationship discovery (FK + fuzzy + value overlap + AI), semantic descriptions. Output: Summary Index in SQLite.
-- Layer 2 Router: Pick 3-8 relevant tables via embeddings (local MiniLM) + graph walking (NetworkX) + AI cross-check. Target: 90%+ recall.
-- Layer 3 Verifier: 6 deterministic checks (schema, join, aggregation, filter, plausibility, completeness). Fix-and-retry (max 3). Confidence: 90-100%=trusted, <50%=unverified.
+## What We're Building
+An open-source Python framework that connects to PostgreSQL, auto-learns the database structure, and lets anyone query it in plain English with VERIFIED, confidence-scored SQL results.
 
-## Tech Stack (future-proof, upgradable)
-- LLM: litellm (provider-agnostic — Claude, GPT, Gemini, Llama, local). User brings own key + chooses model.
-- DB: SQLAlchemy 2.0 (20+ DB types future). Embeddings: sentence-transformers MiniLM (local, free).
-- Vector: FAISS. Graph: NetworkX. SQL parse: sqlparse. Storage: SQLite. API: FastAPI. Validation: pydantic v2.
-- Testing: pytest. Deploy: Docker.
+## Three-Layer Architecture
 
-## Product Name Rule
-Single constant in config.py: PRODUCT_NAME = "DataConnect". All references use this. Change name = change 1 line.
+### Layer 1 — The Scanner (runs once per database)
+- Connects via SQLAlchemy
+- Extracts schema: tables, columns, types, keys, constraints
+- Samples data via TABLESAMPLE BERNOULLI (O(1))
+- Statistical profiling: nulls, uniques, distributions, patterns
+- Relationship discovery: declared FKs + fuzzy name matching + value overlap + AI inference
+- Semantic descriptions via user's chosen LLM
+- Output: Summary Index stored in SQLite (~3K-6K tokens for 50-table DB)
 
-## Security Rules (non-negotiable, violating = blocking issue)
-1. Never store user API keys on disk
-2. Never log SQL results (PII risk)
-3. READ-ONLY only (SELECT queries, reject INSERT/UPDATE/DELETE/DROP)
-4. SQL injection prevention (parameterized via SQLAlchemy)
-5. No eval()/exec()
-6. Rate limiting on API
-7. Input sanitization
-8. DB credentials encrypted at rest if stored
-9. No telemetry without opt-in
-10. HTTPS-only in production
+### Layer 2 — The Router (runs per query)
+- Picks 3-8 relevant tables per question using 3 methods:
+  1. Semantic embedding match (sentence-transformers MiniLM-L6-v2, runs locally, FREE)
+  2. Relationship chain walking (NetworkX, 2 levels deep)
+  3. LLM cross-check (sends candidate list to user's chosen model)
+- Any table matched by ANY method is included (maximize recall)
+
+### Layer 3 — The Verifier (runs per query, 100% deterministic, NO LLM)
+Six checks:
+1. Schema Conformity — do referenced tables/columns exist?
+2. Join Validation — do join columns exist, types match, relationships known?
+3. Aggregation Validation — GROUP BY correctness, function-to-type mapping
+4. Filter Validation — WHERE values against known data ranges/enums
+5. Result Plausibility — row counts, value ranges, null percentages
+6. Completeness Audit — potentially relevant tables not used?
+
+Failed checks → fix-and-retry loop (max 3 attempts)
+Confidence: 90-100% all pass, 70-89% warnings, 50-69% concerns shown, <50% marked unverified
+
+## BYOK — Bring Your Own Key
+Users provide their OWN API key and choose their model:
+- Anthropic (Claude Sonnet/Opus)
+- OpenAI (GPT-4o/o1)
+- Google (Gemini)
+- Local models (Ollama)
+- Any OpenAI-compatible API
+
+We NEVER store or transmit keys except to the user's chosen provider.
+Key is passed at runtime, NEVER saved to disk unless user explicitly configures it.
+
+## Tech Stack (Future-Proof)
+- Python 3.11+ (type hints everywhere)
+- SQLAlchemy 2.0 (supports 20+ database types for expansion)
+- sentence-transformers (MiniLM-L6-v2, 80MB, local, free)
+- FAISS (millisecond vector search)
+- NetworkX (graph operations)
+- sqlparse (AST-level SQL analysis)
+- SQLite (metadata storage, zero-dependency)
+- FastAPI (async API server)
+- pydantic v2 (all data validation)
+- pytest + hypothesis (testing + property-based testing)
+- litellm (unified LLM interface — supports ALL providers via one API)
 
 ## Benchmark Database
-BIRD benchmark (PostgreSQL version) — multiple DBs, known Q&A pairs, complex schemas.
-Also test against eClean production DB as real-world case.
+Use BIRD benchmark (NeurIPS 2023): 95 databases, 12,751 question-SQL pairs, real-world messy data.
+Specifically use BIRD Mini-Dev (500 examples) in PostgreSQL format for development testing.
+This gives us VERIFIED correct answers to measure accuracy against.
 
-## User Experience
-- User provides API key via env var DATACONNECT_API_KEY or per-request header X-API-Key
-- User chooses model via config or per-request param
-- CLI: pip install dataconnect → dataconnect connect → dataconnect ask "question"
-- API: FastAPI /scan, /ask, /status
+## Accuracy Targets
+- Execution accuracy (clean DB): 88-93%
+- Execution accuracy (messy DB): 70-80%
+- Confidence calibration: 95% of high-confidence results correct
+- Router recall: 90%+
+- Hallucination rate (high-conf): <2%
+- Median latency: <4 seconds
 
-## Build Order
-1. Config + models  2. Scanner  3. Router  4. Verifier  5. SQL Generator  6. CLI  7. API  8. Web UI  9. Benchmark  10. Docker + PyPI
+## Interfaces (Phase 4)
+1. CLI: `pip install dataconnect` → `dataconnect scan` → `dataconnect ask "question"`
+2. REST API: FastAPI with OpenAPI docs
+3. Web UI: Simple query interface
 
-## Targets
-Query: 2-5s. Scan: 5-15min. Clean DB accuracy: 88-93%. Messy: 70-80%. High-conf correct: 95%. Hallucination: <2%.
+## What NOT to Build
+- No user auth (users run it on their own infrastructure)
+- No cloud hosting (self-hosted only)
+- No data storage (we never see user data)
+- No payment system
+- No multi-tenant anything
