@@ -17,6 +17,7 @@ _Update as files are created:_
 - `workspace/dataconnect/scanner/__init__.py` — stub
 - `workspace/dataconnect/scanner/schema.py` — extract_schema(engine) → (list[TableInfo], list[RelationshipInfo]) via SQLAlchemy inspect()
 - `workspace/dataconnect/scanner/profiler.py` — profile_table/profile_tables: data sampling + ColumnProfile stats (null_fraction, distinct_count, sample_values, min/max)
+- `workspace/dataconnect/scanner/relationships.py` — discover_relationships(): name matching (FK naming conventions) + value overlap (Jaccard similarity) for non-FK relationship discovery
 - `workspace/dataconnect/router/__init__.py` — stub
 - `workspace/dataconnect/verifier/__init__.py` — stub
 - `workspace/dataconnect/api/__init__.py` — stub
@@ -27,6 +28,7 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_base.py` — protocol + helper tests (4 tests)
 - `workspace/tests/test_scanner_schema.py` — schema extraction tests (10 tests)
 - `workspace/tests/test_scanner_profiler.py` — profiling tests (17 tests)
+- `workspace/tests/test_scanner_relationships.py` — relationship discovery tests (27 tests)
 - `workspace/requirements.txt` — pinned deps
 
 ## Tech Stack (locked)
