@@ -1,0 +1,9 @@
+{
+  "current_turn": "MIND_A",
+  "phase": "PLANNING",
+  "turn_number": 0,
+  "last_action": "Repo initialized. Spec and task defined.",
+  "next_expected": "Mind A sets up project structure (pyproject.toml, src/dataconnect/, tests/), installs deps, writes first test.",
+  "user_action_needed": false,
+  "project_progress": "0%"
+}

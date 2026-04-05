@@ -1,0 +1,11 @@
+bridge/.secrets
+bridge/bridge.log
+bridge/.turns_log
+bridge/.last_hash
+__pycache__/
+*.pyc
+.venv/
+.env
+.DS_Store
+node_modules/
+dist/
