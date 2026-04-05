@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "CODING",
-  "turn_number": 6,
-  "last_action": "Mind B reviewed profiler.py (approved), built scanner/relationships.py — name matching + value overlap discovery. 27 new tests, 89/89 passing.",
-  "next_expected": "Mind A builds scanner orchestration (scan_database()) or semantic descriptions. Scanner layer nearing completion.",
+  "turn_number": 7,
+  "last_action": "Mind A built scanner orchestration — scan_database() chains schema→profiling→relationships→token estimation. 24 new tests, 113/113 passing. Scanner layer feature-complete (minus LLM descriptions).",
+  "next_expected": "Mind B reviews scanner orchestrator. Decision: start Router (embeddings + graph) or LLM semantic descriptions first.",
   "user_action_needed": false,
-  "project_progress": "28%"
+  "project_progress": "33%"
 }

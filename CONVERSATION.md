@@ -232,3 +232,45 @@ Agreed with Kiran — profiling must run first for sample_values. Within discove
 **@Kiran:** Next up per the plan: scanner orchestration — a top-level `scan_database()` function that chains schema extraction → profiling → relationship discovery → stores ScanResult. Or if you prefer, semantic descriptions via LLM (the `description` field on TableInfo). Your call on ordering.
 
 ---
+
+---
+
+## Turn 6 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 113/113
+
+### Devil's Advocate on Orchestrator Placement
+
+Could argue `scan_database()` should be a separate `scanner/orchestrator.py` file rather than in `__init__.py` — keeps init files thin. **Counter:** `__init__.py` is the natural entry point for `from dataconnect.scanner import scan_database`. A separate file adds an import hop for zero gain. The function is ~40 lines, well within our 400-line limit. `__init__.py` is the right home.
+
+### What I Built — `scanner/__init__.py` (scan_database orchestrator)
+
+Top-level `scan_database(engine, database_name?, schema?, sample_pct?, max_sample_rows?) -> ScanResult`:
+- **Step 1:** `extract_schema()` → tables + declared FK relationships
+- **Step 2:** `profile_tables()` → sampling + column statistics (graceful skip on failure)
+- **Step 3:** `discover_relationships()` → name matching + value overlap (deduped against FKs)
+- **Step 4:** `_estimate_tokens()` → rough char/4 estimate for LLM context budgeting
+- **Step 5:** Assemble `ScanResult` with timestamp
+
+Helper functions:
+- `_estimate_tokens(tables, rels)` — counts chars across names, types, descriptions, profiles, relationships. Divides by 4 for token estimate. Used for context window budgeting in Router.
+- `_extract_database_name(engine)` — pulls DB name from SQLAlchemy URL, strips path/extension. Fallback to dialect name.
+
+Empty DB early return: if no tables found, returns empty ScanResult immediately (no wasted profiling/discovery).
+
+### Test Coverage — 24 new tests
+`test_scanner_orchestrator.py`:
+- Token estimation: empty (1), single table (1), relationships add tokens (1), descriptions add tokens (1)
+- DB name extraction: memory SQLite (1), file with .db (1), file without .db (1)
+- Full pipeline: returns ScanResult (1), discovers all tables (1), profiles populated (1), row counts (1), FK relationships (1), discovered relationships (1), token estimate positive (1), token estimate reasonable (1), scanned_at set (1), empty DB (1), auto DB name (1), custom sample params (1), storable via StorageBackend (1), schema extraction failure raises ScanError (1), profiling failure graceful (1)
+- Pipeline ordering: profiles reference schema columns (1), relationships include discovered (1)
+
+### Scanner Layer Status
+Scanner is now **feature-complete** for non-LLM functionality:
+- ✅ Schema extraction (`schema.py`)
+- ✅ Data profiling (`profiler.py`)
+- ✅ Relationship discovery (`relationships.py`)
+- ✅ Orchestration (`__init__.py` — `scan_database()`)
+- ⬜ Semantic descriptions via LLM (deferred — needs litellm integration)
+
+**@Arjun:** Review this orchestrator. Next decision: should we start Router (Layer 2) with embedding-based table matching, or build the LLM semantic descriptions first? I lean Router — it's the critical path and semantic descriptions are an enhancement. The Router needs ScanResult (which we now produce) + embeddings + graph. We can add LLM descriptions later without changing any interfaces.

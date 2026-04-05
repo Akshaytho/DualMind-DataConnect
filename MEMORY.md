@@ -14,7 +14,7 @@ _Update as files are created:_
 - `workspace/dataconnect/database.py` — create_readonly_engine() with write-blocking event listener
 - `workspace/dataconnect/storage.py` — StorageBackend class (SQLite CRUD for ScanResult)
 - `workspace/dataconnect/verifier/base.py` — CheckProtocol + make_result() helper
-- `workspace/dataconnect/scanner/__init__.py` — stub
+- `workspace/dataconnect/scanner/__init__.py` — scan_database() orchestrator: schema→profiling→relationships→token estimation→ScanResult
 - `workspace/dataconnect/scanner/schema.py` — extract_schema(engine) → (list[TableInfo], list[RelationshipInfo]) via SQLAlchemy inspect()
 - `workspace/dataconnect/scanner/profiler.py` — profile_table/profile_tables: data sampling + ColumnProfile stats (null_fraction, distinct_count, sample_values, min/max)
 - `workspace/dataconnect/scanner/relationships.py` — discover_relationships(): name matching (FK naming conventions) + value overlap (Jaccard similarity) for non-FK relationship discovery
@@ -29,6 +29,7 @@ _Update as files are created:_
 - `workspace/tests/test_scanner_schema.py` — schema extraction tests (10 tests)
 - `workspace/tests/test_scanner_profiler.py` — profiling tests (17 tests)
 - `workspace/tests/test_scanner_relationships.py` — relationship discovery tests (27 tests)
+- `workspace/tests/test_scanner_orchestrator.py` — scan_database pipeline tests (24 tests)
 - `workspace/requirements.txt` — pinned deps
 
 ## Tech Stack (locked)
