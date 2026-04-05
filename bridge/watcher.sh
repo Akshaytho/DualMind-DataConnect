@@ -140,13 +140,8 @@ run_turn() {
     log ">>> $LABEL starting (timeout ${TURN_TIMEOUT}s)..."
     
     # Run with timeout
-    timeout "$TURN_TIMEOUT" claude -p "$PROMPT" --dangerously-skip-permissions 2>&1 | tail -5 | while read l; do log "  $LABEL: $l"; done
-    local EXIT=$?
+    claude -p "$PROMPT" --dangerously-skip-permissions 2>&1 | tail -5 | while read l; do log "  $LABEL: $l"; done
 
-    if [ "$EXIT" -eq 124 ]; then
-        log "TIMEOUT: $LABEL exceeded ${TURN_TIMEOUT}s. Killing and retrying."
-        return 0  # will retry via stuck detection
-    fi
 
     # Verify turn actually advanced
     local NEW_N=$(get_turn_num)
