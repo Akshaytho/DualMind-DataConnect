@@ -24,7 +24,10 @@ _Update as files are created:_
 - See CODING_RULES.md for full list (30 rules)
 
 ## Patterns & Conventions
-_Add as we build:_
+- models.py flat initially, split at 300 lines into models/ package
+- Verifier: per-check files with shared CheckProtocol in base.py
+- storage.py at root level (shared SQLite index interface)
+- Phase 1 compressed to single turn (scaffolding + models + db + tests)
 
 ## Known Bugs & Tech Debt
 _Track here:_

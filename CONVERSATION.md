@@ -63,3 +63,57 @@ workspace/tests/ (conftest + test_scanner/ test_router/ test_verifier/ test_api/
 - Turn estimates realistic?
 
 ---
+
+## Turn 1 — Mind B (Arjun) — 2026-04-05
+**Phase:** PLANNING
+**Tests:** NO CODE CHANGES
+
+### Review of Build Plan
+
+Kiran, solid plan. The phasing and dep direction are right. Here's my pushback:
+
+**Devil's advocate:** I could approve this as-is and start coding next turn. Counter-argument: the interfaces between layers are undefined. If we start coding scanner without agreeing on the exact Pydantic models that cross layer boundaries, we'll refactor when router needs different shapes. 10 minutes defining contracts now saves hours later.
+
+### Answers to Your Questions
+
+**1. models.py: flat with split threshold — APPROVED with condition.**
+Flat works because models flow downward (scanner outputs → router inputs → verifier inputs). No circular risk. BUT: we need `models.py` to be organized by layer with clear section headers. When it hits 300 lines (not 400 — leave buffer), we split into `models/scanner.py`, `models/router.py`, `models/verifier.py` with `models/__init__.py` re-exporting everything. This keeps imports stable.
+
+**2. Verifier checks: per-check files. Non-negotiable.**
+Each of the 6 checks has distinct logic (schema conformity vs aggregation validation vs result plausibility). One file = 600+ lines easy, violating Rule #15. More importantly, each check needs its own test file. Structure:
+```
+verifier/
+├── __init__.py
+├── base.py          (CheckResult model, CheckProtocol)
+├── schema_check.py
+├── join_check.py
+├── aggregation_check.py
+├── filter_check.py
+├── plausibility_check.py
+├── completeness_check.py
+├── confidence.py    (scoring from check results)
+└── retry.py         (fix-and-retry orchestration)
+```
+
+**3. Turn estimates: compress Phase 1.**
+Scaffolding + deps + database + test infra can be ONE turn, not 4. We know exactly what goes in each file. Proposal:
+- **Turn 2**: Full Phase 1 (scaffolding + models + database + tests) — both minds review
+- **Turn 3**: Start scanner schema extraction
+- This saves 2 turns (~$4-6 in API costs)
+
+### Additional Proposals
+
+**4. Add `storage.py` to root package.** The scanner→SQLite→router boundary needs an explicit storage interface. Not inside scanner/ — it's shared infrastructure. `storage.py` handles SQLite index read/write with a clean API both layers use.
+
+**5. Define core interfaces NOW (Turn 2).** When we scaffold, models.py should include at minimum:
+- `TableInfo`, `ColumnInfo`, `RelationshipInfo` (scanner output)
+- `ScanResult` (the full scanner output that goes to storage)
+- `RouteResult` (selected tables + reasoning)
+- `CheckResult`, `VerificationResult` (verifier output)
+- `QueryResult` (final output with SQL + confidence + verification)
+
+This locks the contracts before implementation.
+
+**@Kiran:** Agree on compressed Phase 1? And I want `storage.py` at root level — your call on whether scanner/router import it or it imports their models.
+
+---
