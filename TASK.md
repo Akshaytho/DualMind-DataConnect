@@ -86,3 +86,22 @@ This gives us VERIFIED correct answers to measure accuracy against.
 - No data storage (we never see user data)
 - No payment system
 - No multi-tenant anything
+
+## ADDITIONAL SECURITY (added post-init)
+11. FastAPI endpoints MUST require API key via X-API-Key header — no anonymous access
+12. Connection strings MUST be sanitized before logging (mask password: postgresql://user:***@host/db)
+13. All dependencies MUST be pinned to exact versions in requirements.txt
+14. No secrets in git — ever. Use env vars only.
+15. Implement request rate limiting: max 60 queries/minute per API key
+
+## ROLLBACK SAFETY
+- Every module must have independent tests
+- If tests pass for module A but fail for module B after changes, revert module B changes
+- Never modify working code without a test proving the modification is needed
+
+## BENCHMARK DETAILS
+- Primary: BIRD benchmark PostgreSQL version (https://bird-bench.github.io/)
+- Contains databases with 40+ tables and known SQL answers
+- Each question has a golden SQL query — compare DataConnect output vs golden query results
+- Measure: execution accuracy, confidence calibration, hallucination rate
+- Secondary: eClean production database (real-world messy data test)

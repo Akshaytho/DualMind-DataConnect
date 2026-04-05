@@ -31,3 +31,11 @@
 
 ---
 ```
+
+## Additional Quality Gates
+- Pin ALL dependencies with exact versions in requirements.txt (e.g., pydantic==2.7.1, not pydantic>=2.0)
+- Never log connection strings containing passwords — sanitize before logging
+- Every HTTP endpoint MUST have API key authentication
+- All DB queries MUST go through SQLAlchemy parameterized queries — never raw string SQL
+- If you add a new file, update MEMORY.md code map immediately
+- Before pushing, verify git status is clean — no untracked secrets or temp files

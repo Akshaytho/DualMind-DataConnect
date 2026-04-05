@@ -28,3 +28,16 @@ _Add as we build:_
 
 ## Known Bugs & Tech Debt
 _Track here:_
+
+## Additional Security (v3.1)
+- [ ] FastAPI requires X-API-Key header on all endpoints
+- [ ] Connection strings sanitized in logs (mask passwords)
+- [ ] All deps pinned in requirements.txt
+- [ ] Rate limiting: 60 queries/min per API key
+- [ ] No secrets in git ever
+
+## Bridge Protections (v3.1)
+- 10-minute timeout per turn (kills if hung)
+- Stuck detection: 2 retries then rollback + pause
+- Git recovery: auto-clean dirty state
+- Rate limit: 15 turns/hour max

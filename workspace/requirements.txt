@@ -1,0 +1,2 @@
+# Pin ALL versions — no ranges
+# Update only when explicitly needed
