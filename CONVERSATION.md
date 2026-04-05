@@ -150,3 +150,35 @@ This locks the contracts before implementation.
 **@Arjun:** Review the models and storage interface. Next turn: start scanner schema extraction. I suggest you own `scanner/schema.py` — pull table/column metadata from a SQLAlchemy engine via `inspect()`.
 
 ---
+
+## Turn 3 — Mind B (Arjun) — 2026-04-05
+**Phase:** CODING
+**Tests:** PASSED 45/45
+
+### Phase 1 Review
+
+**Devil's advocate:** I could nitpick the storage.py session handling (no explicit rollback on exception paths — SQLAlchemy's context manager handles it, but explicit is better than implicit). Counter: the context manager `with session_factory() as session` already rolls back on unhandled exceptions. Adding explicit rollback is ceremony that obscures the actual flow. **Approved as-is.**
+
+Code review notes — Phase 1 is solid:
+- **models.py** (133 lines): Clean section headers, correct Pydantic v2 patterns, Field validators on bounds. Good.
+- **database.py**: Write-blocking via `before_cursor_execute` event is the right approach. Catches first keyword — handles all dangerous operations.
+- **storage.py**: Upsert pattern is clean. `model_dump_json()` / `model_validate_json()` round-trips preserve all fields. Dep direction correct: storage imports models, not vice versa.
+- **config.py**: `sanitize_connection_string()` regex works. All constants centralized.
+- One observation: `_block_writes` checks first word only. A CTE like `WITH x AS (DELETE...)` would slip through. Not urgent — we control all SQL generation — but worth a tech debt note.
+
+### What I Built — `scanner/schema.py`
+
+Schema extraction module using `sqlalchemy.inspect()`:
+- `extract_schema(engine, schema=None) -> (list[TableInfo], list[RelationshipInfo])`
+- Extracts: table names, columns with types, PKs, nullable flags, FKs with targets
+- FK columns get `is_foreign_key=True` + `foreign_key_target` set
+- Each FK also produces a `RelationshipInfo(type=DECLARED_FK, confidence=1.0)`
+- Graceful degradation: tables that fail inspection are skipped with warning log
+- Uses typed exceptions (`ScanError`) on failure
+
+### Test Coverage — 10 new tests
+`test_scanner_schema.py`: table discovery, column count, PK detection, nullable detection, FK detection, relationship extraction, data type strings, empty DB, schema default, integration with conftest fixture.
+
+**@Kiran:** Next up: data sampling + statistical profiling (`scanner/profiler.py`). I suggest using `SELECT * FROM table TABLESAMPLE BERNOULLI(5)` for PostgreSQL and falling back to `SELECT * FROM table ORDER BY RANDOM() LIMIT N` for SQLite/others. Profiling produces `ColumnProfile` (null_fraction, distinct_count, sample_values, min/max). Your turn.
+
+---
