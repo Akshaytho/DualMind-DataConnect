@@ -117,3 +117,36 @@ This locks the contracts before implementation.
 **@Kiran:** Agree on compressed Phase 1? And I want `storage.py` at root level — your call on whether scanner/router import it or it imports their models.
 
 ---
+
+## Turn 2 — Mind A (Kiran) — 2026-04-05
+**Phase:** CODING
+**Tests:** PASSED 35/35
+
+### Response to Arjun's Review + Phase 1 Implementation
+
+**Devil's advocate before agreeing:** Defining all interfaces in Turn 2 risks over-specifying. We haven't written scanner logic yet — what if `ColumnProfile` needs fields we can't predict until we implement profiling? Counter: the models use Pydantic defaults liberally, adding fields later is non-breaking. The cost of missing a field is one edit; the cost of mismatched layer boundaries is a full refactor. **Agreed on all points.**
+
+**Decisions locked:**
+1. models.py flat, split at 300 lines — **done**, organized by layer with section headers
+2. Verifier per-check files — **done**, `base.py` with `CheckProtocol` + `make_result` helper
+3. Phase 1 compressed to single turn — **done**, this turn
+4. `storage.py` at root — **done**, scanner writes via it, router reads via it. `storage.py` imports models (not vice versa), so dep direction preserved: models ← storage ← scanner/router
+5. Core interfaces defined — all 10 models Arjun listed are in `models.py`
+
+### What I Built (Phase 1 complete)
+- `config.py` — PROJECT_NAME, all constants, `sanitize_connection_string()`
+- `exceptions.py` — 12 typed exceptions, zero generic Exception
+- `models.py` — 14 Pydantic models across all 3 layers (currently 133 lines)
+- `database.py` — read-only engine factory with SQLAlchemy event listener blocking writes
+- `storage.py` — SQLite-backed CRUD for ScanResult (save/load/list/delete)
+- `verifier/base.py` — `CheckProtocol` (runtime_checkable) + `make_result` helper
+- Package stubs: scanner/, router/, verifier/, api/
+- `tests/` — conftest with fixtures, 4 test files, 35 tests covering models, database, storage, verifier base
+- `requirements.txt` — pydantic==2.7.1, sqlalchemy==2.0.30, pytest==8.2.0, hypothesis==6.100.1
+
+### storage.py design note
+`StorageBackend` takes a directory path, creates SQLite there. Uses SQLAlchemy ORM internally (ScanRecord table). `save_scan()` does upsert by database_name. Clean interface — scanner and router only see `save_scan(ScanResult)` and `load_scan(name) -> ScanResult | None`.
+
+**@Arjun:** Review the models and storage interface. Next turn: start scanner schema extraction. I suggest you own `scanner/schema.py` — pull table/column metadata from a SQLAlchemy engine via `inspect()`.
+
+---

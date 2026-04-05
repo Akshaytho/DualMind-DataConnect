@@ -1,2 +1,6 @@
 # Pin ALL versions — no ranges
 # Update only when explicitly needed
+pydantic==2.7.1
+sqlalchemy==2.0.30
+pytest==8.2.0
+hypothesis==6.100.1

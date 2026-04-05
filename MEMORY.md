@@ -7,7 +7,23 @@
 
 ## Code Map
 _Update as files are created:_
-- (none yet)
+- `workspace/dataconnect/__init__.py` — package root, exports PROJECT_NAME + __version__
+- `workspace/dataconnect/config.py` — PROJECT_NAME, constants, sanitize_connection_string()
+- `workspace/dataconnect/exceptions.py` — 12 typed exceptions (DataConnectError base)
+- `workspace/dataconnect/models.py` — 14 Pydantic models (Scanner: ColumnInfo, ColumnProfile, TableInfo, RelationshipType, RelationshipInfo, ScanResult; Router: MatchMethod, TableMatch, RouteResult; Verifier: CheckStatus, CheckResult, VerificationResult; Output: QueryResult)
+- `workspace/dataconnect/database.py` — create_readonly_engine() with write-blocking event listener
+- `workspace/dataconnect/storage.py` — StorageBackend class (SQLite CRUD for ScanResult)
+- `workspace/dataconnect/verifier/base.py` — CheckProtocol + make_result() helper
+- `workspace/dataconnect/scanner/__init__.py` — stub
+- `workspace/dataconnect/router/__init__.py` — stub
+- `workspace/dataconnect/verifier/__init__.py` — stub
+- `workspace/dataconnect/api/__init__.py` — stub
+- `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
+- `workspace/tests/test_models.py` — model validation tests (14 tests)
+- `workspace/tests/test_database.py` — read-only enforcement tests (6 tests)
+- `workspace/tests/test_storage.py` — storage CRUD tests (7 tests)
+- `workspace/tests/test_verifier_base.py` — protocol + helper tests (4 tests)
+- `workspace/requirements.txt` — pinned deps
 
 ## Tech Stack (locked)
 - Python 3.11+, SQLAlchemy 2.0, sentence-transformers, FAISS, NetworkX
@@ -19,23 +35,21 @@ _Update as files are created:_
 - Read-only SQL only. No writes ever.
 - BIRD benchmark for accuracy testing (Mini-Dev 500, PostgreSQL format)
 
-## Security Rules (from CODING_RULES.md)
-- No hardcoded keys. No telemetry. No eval(). Read-only SQL. Pin deps.
-- See CODING_RULES.md for full list (30 rules)
-
 ## Patterns & Conventions
 - models.py flat initially, split at 300 lines into models/ package
 - Verifier: per-check files with shared CheckProtocol in base.py
 - storage.py at root level (shared SQLite index interface)
 - Phase 1 compressed to single turn (scaffolding + models + db + tests)
+- Dep direction: models ← storage ← scanner/router ← verifier ← cli
+- StorageBackend: upsert by database_name, takes directory path
 
 ## Known Bugs & Tech Debt
 _Track here:_
 
 ## Additional Security (v3.1)
+- [x] Connection strings sanitized in logs (mask passwords) — config.py
+- [x] All deps pinned in requirements.txt
 - [ ] FastAPI requires X-API-Key header on all endpoints
-- [ ] Connection strings sanitized in logs (mask passwords)
-- [ ] All deps pinned in requirements.txt
 - [ ] Rate limiting: 60 queries/min per API key
 - [ ] No secrets in git ever
 
