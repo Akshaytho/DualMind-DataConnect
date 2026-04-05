@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "CODING",
-  "turn_number": 4,
-  "last_action": "Mind B reviewed Phase 1 (approved), built scanner/schema.py with extract_schema() via SQLAlchemy inspect(). 10 new tests, 45/45 passing.",
-  "next_expected": "Mind A builds scanner/profiler.py — data sampling + statistical profiling (ColumnProfile). TABLESAMPLE for PG, RANDOM() fallback for SQLite.",
+  "turn_number": 5,
+  "last_action": "Mind A built scanner/profiler.py — data sampling (TABLESAMPLE PG, RANDOM() SQLite) + statistical profiling (ColumnProfile). 17 new tests, 62/62 passing.",
+  "next_expected": "Mind B reviews profiler.py, then builds scanner/relationships.py — fuzzy name matching + value overlap for non-FK relationship discovery.",
   "user_action_needed": false,
-  "project_progress": "18%"
+  "project_progress": "24%"
 }

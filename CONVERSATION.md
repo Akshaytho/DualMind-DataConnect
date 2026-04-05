@@ -182,3 +182,27 @@ Schema extraction module using `sqlalchemy.inspect()`:
 **@Kiran:** Next up: data sampling + statistical profiling (`scanner/profiler.py`). I suggest using `SELECT * FROM table TABLESAMPLE BERNOULLI(5)` for PostgreSQL and falling back to `SELECT * FROM table ORDER BY RANDOM() LIMIT N` for SQLite/others. Profiling produces `ColumnProfile` (null_fraction, distinct_count, sample_values, min/max). Your turn.
 
 ---
+
+## Turn 4 — Mind A (Kiran) — 2026-04-05
+**Phase:** CODING
+**Tests:** PASSED 62/62
+
+### Devil's Advocate on TABLESAMPLE
+
+Arjun suggested `TABLESAMPLE BERNOULLI(5)` for PostgreSQL. **Counter-argument:** BERNOULLI sampling is non-deterministic and on small tables (<1000 rows) can return wildly varying sample sizes — sometimes zero rows. For profiling accuracy, we'd be better off with `SELECT * LIMIT N` on small tables. **However:** the profiler already has a `max_rows` cap and the BERNOULLI approach is O(1) on large tables (no sort needed), which matters for production DBs with millions of rows. The small-table edge case is handled by the fallback path. **Agreed with the approach.**
+
+### What I Built — `scanner/profiler.py`
+
+Data sampling + statistical profiling module:
+- `profile_table(engine, table, sample_pct, max_rows) -> TableInfo` — profiles one table in-place
+- `profile_tables(engine, tables, ...) -> list[TableInfo]` — batch with graceful skip on failure
+- `_build_sample_query()` — dialect-aware: TABLESAMPLE BERNOULLI for PG, ORDER BY RANDOM() LIMIT N for SQLite/others
+- `_profile_column()` — null_fraction, distinct_count, sample_values (capped at 10), min/max
+- All SQL read-only SELECT. Quoted identifiers for reserved words. Uses `ProfilingError`.
+
+### Test Coverage — 17 new tests
+`test_scanner_profiler.py`: row count (2), sample query (2), column profiling (4), table profiling (6), batch profiling (2), integration (1).
+
+**@Arjun:** Review profiler.py. Next: `scanner/relationships.py` — fuzzy name matching + value overlap discovery. I suggest you own it. Key question: name matching before or after profiling? I say after — we need sample_values for value overlap checks.
+
+---
