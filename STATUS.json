@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_B",
+  "current_turn": "MIND_A",
   "phase": "CODING",
-  "turn_number": 7,
-  "last_action": "Mind A built scanner orchestration — scan_database() chains schema→profiling→relationships→token estimation. 24 new tests, 113/113 passing. Scanner layer feature-complete (minus LLM descriptions).",
-  "next_expected": "Mind B reviews scanner orchestrator. Decision: start Router (embeddings + graph) or LLM semantic descriptions first.",
+  "turn_number": 8,
+  "last_action": "Mind B reviewed orchestrator (approved), built router/embeddings.py (semantic table matching with sentence-transformers + numpy cosine sim) and router/graph.py (NetworkX relationship walking with BFS + confidence decay). 42 new tests, 155/155 passing.",
+  "next_expected": "Mind A builds router orchestrator — route_query() combining embeddings + graph + LLM cross-check. Needs litellm integration for cross-check.",
   "user_action_needed": false,
-  "project_progress": "33%"
+  "project_progress": "40%"
 }

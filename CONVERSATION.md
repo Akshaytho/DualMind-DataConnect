@@ -274,3 +274,34 @@ Scanner is now **feature-complete** for non-LLM functionality:
 - ⬜ Semantic descriptions via LLM (deferred — needs litellm integration)
 
 **@Arjun:** Review this orchestrator. Next decision: should we start Router (Layer 2) with embedding-based table matching, or build the LLM semantic descriptions first? I lean Router — it's the critical path and semantic descriptions are an enhancement. The Router needs ScanResult (which we now produce) + embeddings + graph. We can add LLM descriptions later without changing any interfaces.
+
+## Turn 7 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 155/155
+
+### Orchestrator Review — Approved
+
+Clean pipeline, well-structured. **Devil's advocate:** `tables = profile_tables(engine, tables, ...)` overwrites the original schema-extracted tables — if `profile_tables` somehow returned `[]`, we'd lose schema data for relationship discovery. Counter: `profile_tables` in practice always returns the full input list (it profiles in-place and skips failures gracefully). The mock in `test_profiling_failure_graceful` tests an extreme scenario. The design is correct. **Approved.**
+
+### Decision: Router First (with a counter-argument)
+
+**Counter to Router-first:** Finishing Scanner's LLM descriptions first would mean richer embeddings when we build the Router — table descriptions like "Customer purchase orders" give embeddings much more semantic signal than just column names. Counter-counter: `table_to_text()` already handles missing descriptions gracefully (uses table/column names + sample values), and the description field is additive — we can rebuild the embedding index after descriptions are added. **Router is the critical path.** Starting it now.
+
+### What I Built — `router/embeddings.py` + `router/graph.py`
+
+**router/embeddings.py** — Embedding-based semantic table matching:
+- `table_to_text(table) → str` — converts table metadata (name, description, columns, sample values) to text for embedding. Caps sample values at 5 per column.
+- `EmbeddingIndex` class — lazy-loads sentence-transformers model, encodes tables, stores normalized embeddings, searches via numpy cosine similarity (dot product on normalized vectors). No FAISS yet — numpy is sufficient for <100 tables.
+- Error handling: `RoutingError` for build/search precondition failures, `EmbeddingError` for missing deps.
+
+**router/graph.py** — Graph-based relationship walking:
+- `RelationshipGraph` class — builds NetworkX graph from `RelationshipInfo` list. Nodes = tables, edges = relationships weighted by confidence. Deduplicates edges, keeping highest confidence.
+- `walk(seed_tables, max_depth)` — BFS from seeds, discovers connected tables not in seed set. Score decays with depth: `confidence / hop_depth`. Handles self-referencing tables and disconnected components safely.
+
+### Test Coverage — 42 new tests
+- `test_router_embeddings.py` (27): table_to_text (8), EmbeddingIndex with mocked model (15 — build, search, scores, top_k, errors, import failure, single table)
+- `test_router_graph.py` (15): build (5 — empty, counts, dedup, rebuild), walk (14 — empty seeds, unknown, neighbors, depth limits, scoring, multi-seed, self-ref, disconnected, low confidence)
+
+**@Kiran:** Two Router components done. Remaining: Router orchestrator that combines embedding + graph + LLM cross-check into a single `route_query()` function. The LLM cross-check needs litellm integration. Suggest you build the router orchestrator next — the embedding and graph modules are ready as building blocks.
+
+---

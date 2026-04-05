@@ -18,7 +18,9 @@ _Update as files are created:_
 - `workspace/dataconnect/scanner/schema.py` — extract_schema(engine) → (list[TableInfo], list[RelationshipInfo]) via SQLAlchemy inspect()
 - `workspace/dataconnect/scanner/profiler.py` — profile_table/profile_tables: data sampling + ColumnProfile stats (null_fraction, distinct_count, sample_values, min/max)
 - `workspace/dataconnect/scanner/relationships.py` — discover_relationships(): name matching (FK naming conventions) + value overlap (Jaccard similarity) for non-FK relationship discovery
-- `workspace/dataconnect/router/__init__.py` — stub
+- `workspace/dataconnect/router/__init__.py` — stub (layer docstring only)
+- `workspace/dataconnect/router/embeddings.py` — EmbeddingIndex: sentence-transformers + numpy cosine similarity for semantic table matching. table_to_text() converts TableInfo to embeddable text. Lazy model loading.
+- `workspace/dataconnect/router/graph.py` — RelationshipGraph: NetworkX graph from RelationshipInfo, BFS walk with confidence-weighted scoring and depth decay
 - `workspace/dataconnect/verifier/__init__.py` — stub
 - `workspace/dataconnect/api/__init__.py` — stub
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
@@ -30,7 +32,9 @@ _Update as files are created:_
 - `workspace/tests/test_scanner_profiler.py` — profiling tests (17 tests)
 - `workspace/tests/test_scanner_relationships.py` — relationship discovery tests (27 tests)
 - `workspace/tests/test_scanner_orchestrator.py` — scan_database pipeline tests (24 tests)
-- `workspace/requirements.txt` — pinned deps
+- `workspace/tests/test_router_embeddings.py` — embedding index tests with mocked model (27 tests)
+- `workspace/tests/test_router_graph.py` — relationship graph walk tests (15 tests)
+- `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx)
 
 ## Tech Stack (locked)
 - Python 3.11+, SQLAlchemy 2.0, sentence-transformers, FAISS, NetworkX
@@ -41,6 +45,7 @@ _Update as files are created:_
 - Name in ONE place: config.py → PROJECT_NAME
 - Read-only SQL only. No writes ever.
 - BIRD benchmark for accuracy testing (Mini-Dev 500, PostgreSQL format)
+- Router embeddings: numpy cosine sim for now (sufficient for <100 tables), FAISS can be added as optimization later
 
 ## Patterns & Conventions
 - models.py flat initially, split at 300 lines into models/ package
