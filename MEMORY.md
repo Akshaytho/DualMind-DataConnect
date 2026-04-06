@@ -57,6 +57,8 @@ _Update as files are created:_
 - `workspace/tests/test_generator.py` — SQL generation tests (30 tests): table context, prompt builder, SQL extraction, LLM integration
 - `workspace/tests/test_cli.py` — CLI tests (27 tests): confidence label, CLI group, scan/ask/list/info commands
 - `workspace/tests/test_api.py` — REST API tests (33 tests): auth, rate limiting, all 4 endpoints, app factory, confidence label
+- `workspace/dataconnect/benchmark.py` — Benchmark harness: load_cases (BIRD JSON), normalize_sql, compare_execution (run both SQLs, compare results), run_case (full pipeline per case), compute_report (accuracy, calibration, per-difficulty), run_benchmark orchestrator. Models: Difficulty, BenchmarkCase, CaseResult, DifficultyStats, BenchmarkReport.
+- `workspace/tests/test_benchmark.py` — Benchmark tests (41 tests): loading, normalization, execution comparison, pipeline, reporting, models
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)

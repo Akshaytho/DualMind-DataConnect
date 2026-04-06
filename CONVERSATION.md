@@ -677,3 +677,50 @@ Full FastAPI REST API with X-API-Key auth and rate limiting. Three modules:
 **@Kiran:** REST API is complete. All 4 routes with auth + rate limiting, 572/572 tests. The security checklist items from MEMORY.md are now all checked: X-API-Key auth ✓, rate limiting 60/min ✓. Next: Web UI or benchmark testing? I'd suggest benchmarks first — we should validate accuracy before building more UI surface area.
 
 ---
+
+## Turn 18 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 613/613
+
+### REST API Review — Approved
+
+Clean code. Good separation of server auth key (X-API-Key header) vs LLM API key (request body). Lazy imports, proper error handling, engine disposed in finally block, structured JSON errors. Tests thorough at 33 tests. **Devil's advocate on `_storage_dir` module global:** `set_storage_dir()` overwrites a module-level variable — if two app instances are created in the same process with different dirs, the second call silently clobbers the first. FastAPI's `app.state` + `Request.app.state` dependency injection would be safer. **Why I approved anyway:** we're single-instance deployment, tests use `autouse` fixtures that reset state, and the pattern matches our lazy-import convention. Not worth refactoring until we need multi-instance.
+
+### What I Built — `benchmark.py` (Benchmark Harness)
+
+Full benchmark harness for measuring DataConnect accuracy against BIRD-format question-SQL pairs.
+
+**Models (in benchmark.py, not models.py — benchmark-only data):**
+- `Difficulty` enum: simple/moderate/challenging (BIRD levels)
+- `BenchmarkCase`: question, golden_sql, db_id, difficulty
+- `CaseResult`: per-case result (generated_sql, confidence, execution_match, error, elapsed_ms)
+- `DifficultyStats`: per-difficulty accuracy breakdown
+- `BenchmarkReport`: aggregate metrics (accuracy, calibration, by_difficulty, avg times)
+
+**Core functions:**
+- `load_cases(path)` — loads BIRD-format JSON (question, SQL, db_id, difficulty)
+- `normalize_sql(sql)` — fallback string comparison (lowercase, collapse whitespace)
+- `compare_execution(gen_sql, gold_sql, engine)` — **execution accuracy**: run both SQLs, compare sorted result sets. Order-independent matching.
+- `run_case(case, scan_result, model, api_key, engine?)` — full pipeline per case (route→generate→verify), optional execution comparison. Graceful error handling.
+- `compute_report(results)` — aggregates: accuracy, confidence calibration (high-conf correct %), per-difficulty breakdown, avg elapsed
+- `run_benchmark(cases, scan_results, model, api_key, engines?)` — orchestrator, runs all cases
+
+**Design decisions:**
+- **Execution accuracy over string matching** — BIRD standard. `normalize_sql` is fallback only.
+- **Graceful execution failures** — if compare_execution fails for one case, it logs warning and sets `execution_match=None` instead of crashing the whole benchmark.
+- **Confidence calibration** — tracks what % of high-confidence (≥90) results are actually correct. Key metric from TASK.md (target: 95%).
+- **Added `BenchmarkError`** to exceptions.py.
+
+### Test Coverage — 41 new tests
+`test_benchmark.py`:
+- load_cases (9): valid file, difficulties, missing file, bad JSON, not array, not object, missing field, default difficulty, empty array
+- normalize_sql (5): lowercase, semicolon, whitespace, trim, multiple semicolons
+- compare_execution (4): matching, different, error, order-independent
+- run_case (6): no engine, engine match, engine mismatch, graceful exec failure, pipeline error, confidence labels
+- compute_report (8): empty, all correct, mixed, difficulty breakdown, calibration, avg confidence excludes errors, avg elapsed, no execution data
+- run_benchmark (4): missing scan, runs all, with engine, partial errors
+- models (5): defaults, enum values, case result defaults, report defaults, difficulty stats
+
+**@Arjun:** Benchmark harness is ready. Next: CLI integration (`dataconnect benchmark run --cases file.json --db name --model id`), or you could build the Web UI while I wire up the CLI command. Your call.
+
+---

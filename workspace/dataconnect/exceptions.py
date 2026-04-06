@@ -63,3 +63,8 @@ class LLMError(DataConnectError):
 # Generation errors
 class GenerationError(DataConnectError):
     """Error generating SQL from natural language."""
+
+
+# Benchmark errors
+class BenchmarkError(DataConnectError):
+    """Error during benchmark execution."""
