@@ -21,6 +21,8 @@ _Update as files are created:_
 - `workspace/dataconnect/router/__init__.py` — route_query() orchestrator: embeddings + graph + LLM cross-check → merged RouteResult
 - `workspace/dataconnect/router/embeddings.py` — EmbeddingIndex: sentence-transformers + numpy cosine similarity for semantic table matching. table_to_text() converts TableInfo to embeddable text. Lazy model loading.
 - `workspace/dataconnect/router/graph.py` — RelationshipGraph: NetworkX graph from RelationshipInfo, BFS walk with confidence-weighted scoring and depth decay
+- `workspace/dataconnect/verifier/schema_conformity.py` — SchemaConformityCheck: validates all SQL table/column references exist in schema (sqlparse + regex, case-insensitive, alias-aware)
+- `workspace/dataconnect/verifier/join_validation.py` — JoinValidationCheck: validates join columns exist, types compatible, relationships known (regex-based JOIN parsing, type group matching, bidirectional relationship lookup)
 - `workspace/dataconnect/verifier/__init__.py` — stub
 - `workspace/dataconnect/api/__init__.py` — stub
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
@@ -35,7 +37,9 @@ _Update as files are created:_
 - `workspace/tests/test_router_embeddings.py` — embedding index tests with mocked model (27 tests)
 - `workspace/tests/test_router_graph.py` — relationship graph walk tests (15 tests)
 - `workspace/tests/test_router_orchestrator.py` — route_query pipeline tests (38 tests)
-- `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm)
+- `workspace/tests/test_verifier_schema_conformity.py` — schema conformity check tests (30 tests)
+- `workspace/tests/test_verifier_join_validation.py` — join validation check tests (19 tests)
+- `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)
 - Python 3.11+, SQLAlchemy 2.0, sentence-transformers, FAISS, NetworkX

@@ -347,3 +347,41 @@ Router is now **feature-complete**:
 **@Arjun:** Review this orchestrator. Next up: Verifier (Layer 3). I suggest starting with the schema conformity check and join validation — they're the most impactful for catching hallucinated SQL. Thoughts?
 
 ---
+
+## Turn 9 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 242/242
+
+### Router Orchestrator Review — Approved
+
+Clean design. Union merge strategy is correct for maximizing recall. **Devil's advocate:** `_merge_matches` is called twice (lines 259 and 275) — once to build the LLM prompt's "already selected" list, once for final merge. Could save a micro-optimization by just concatenating names for the prompt instead of full dedup. Counter: the overhead is negligible for <100 tables, and reusing `_merge_matches` keeps logic consistent. The flat 0.8 LLM score is a reasonable design choice — LLM acts as recall booster, not ranker. **Approved.**
+
+### What I Built — `verifier/schema_conformity.py` + `verifier/join_validation.py`
+
+**verifier/schema_conformity.py** — Verifier Check 1: Schema Conformity
+- `SchemaConformityCheck` implementing `CheckProtocol` — validates every table and column in SQL exists in the scanned schema
+- `extract_table_references(sql)` — walks sqlparse tokens to find table names from FROM/JOIN clauses (handles aliases, schema-qualified names, subqueries)
+- `extract_table_aliases(sql)` — builds alias→real_table mapping for column resolution
+- `extract_qualified_columns(sql)` — regex extraction of table.column references
+- Case-insensitive matching, `t.*` not flagged as missing, graceful on empty SQL
+- FAILED: missing tables; WARNING: missing columns only; PASSED: all refs valid
+
+**verifier/join_validation.py** — Verifier Check 2: Join Validation
+- `JoinValidationCheck` implementing `CheckProtocol` — validates JOIN conditions
+- Three checks per join: (1) columns exist, (2) types compatible, (3) relationship known
+- `parse_join_conditions(sql)` — regex-based JOIN...ON extraction, handles multi-condition AND joins
+- Type compatibility via grouped type families (integers, strings, timestamps, etc.) — unknown types get benefit of the doubt
+- Bidirectional relationship lookup (orders→customers and customers→orders both recognized)
+- FAILED: missing columns or type mismatch; WARNING: unknown relationship; PASSED: all valid
+
+Both share `extract_table_aliases` (join_validation imports from schema_conformity — no circular deps).
+
+### Test Coverage — 49 new tests
+- `test_verifier_schema_conformity.py` (30): protocol compliance (2), extract_table_references (7), extract_table_aliases (4), extract_qualified_columns (4), run PASSED (3), run FAILED (2), run WARNING (2), both missing (1), context validation (2), edge cases (3)
+- `test_verifier_join_validation.py` (19): parse_join_conditions (6), run PASSED (3), run WARNING (2), run FAILED—columns (2), run FAILED—types (3), alias resolution (1), context validation (2)
+
+Added `sqlparse==0.5.5` to requirements.txt.
+
+**@Kiran:** Verifier Checks 1 and 2 are done. Next: Checks 3 (Aggregation Validation) and 4 (Filter Validation). I suggest you take aggregation — it needs GROUP BY correctness and function-to-type mapping, which pairs well with the sqlparse parsing patterns established here. I'll take filter validation next turn.
+
+---
