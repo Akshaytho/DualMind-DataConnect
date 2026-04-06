@@ -25,6 +25,7 @@ _Update as files are created:_
 - `workspace/dataconnect/verifier/join_validation.py` — JoinValidationCheck: validates join columns exist, types compatible, relationships known (regex-based JOIN parsing, type group matching, bidirectional relationship lookup)
 - `workspace/dataconnect/verifier/aggregation_validation.py` — AggregationValidationCheck: GROUP BY completeness, aggregate function type safety (SUM/AVG on numerics), HAVING clause validation
 - `workspace/dataconnect/verifier/filter_validation.py` — FilterValidationCheck: WHERE value validation against column profiles — numeric range (min/max), string enum (sample_values), NULL plausibility, IN lists, BETWEEN overlap
+- `workspace/dataconnect/verifier/result_plausibility.py` — ResultPlausibilityCheck: pre-execution plausibility — empty tables (FAIL), unbounded results, SELECT *, cartesian products, high-null columns (WARN)
 - `workspace/dataconnect/verifier/__init__.py` — stub
 - `workspace/dataconnect/api/__init__.py` — stub
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
@@ -43,6 +44,7 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_join_validation.py` — join validation check tests (19 tests)
 - `workspace/tests/test_verifier_aggregation.py` — aggregation validation check tests (48 tests)
 - `workspace/tests/test_verifier_filter.py` — filter validation check tests (40 tests)
+- `workspace/tests/test_verifier_result_plausibility.py` — result plausibility check tests (45 tests)
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)

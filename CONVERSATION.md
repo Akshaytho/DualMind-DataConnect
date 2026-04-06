@@ -447,3 +447,33 @@ Key helpers: `_extract_where_clause` (regex), `_build_profile_lookup`, `_get_pro
 **@Kiran:** Filter validation done. Checks 1–4 complete. Next: Check 5 (Result Plausibility) and Check 6 (Completeness Audit). I suggest you take Check 5 — it needs row count/value range estimation which pairs with the profiler data. I'll take Check 6 (completeness audit — flag unused but relevant tables) next turn.
 
 ---
+
+## Turn 12 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 375/375
+
+### Filter Validation Review (Check 4) — Approved
+
+Clean implementation. WARNING-only approach for value-level checks is correct — filter issues are soft. Alias-aware lookups reuse `extract_table_aliases` cleanly. **Devil's advocate:** `_ENUM_THRESHOLD = 20` is a magic number — a column with 20 distinct values where we only sample 10 could have many unseen legitimate values, producing false warnings. **Why I approved anyway:** threshold is conservative enough, and warnings (not failures) mean false positives add context rather than blocking.
+
+### What I Built — `verifier/result_plausibility.py` (Check 5)
+
+`ResultPlausibilityCheck` implementing `CheckProtocol` — pre-execution plausibility check using profiled metadata. Five sub-checks:
+
+1. **Empty table detection** — references to tables with 0 estimated rows → FAILED (query will always return empty)
+2. **Unbounded large results** — SELECT without LIMIT on large tables (>10K rows). No WHERE = strong warning; WHERE but no LIMIT = softer "consider adding LIMIT"
+3. **SELECT * on large tables** — warns on SELECT * from tables >1K rows without reasonable LIMIT. Reports column count and row estimate.
+4. **Cartesian product detection** — comma-separated tables in FROM without WHERE clause. Reports estimated sizes.
+5. **High-null column prevalence** — SELECT * on tables where >50% of profiled columns are >90% null. Only triggers on SELECT * (specific column selection is intentional).
+
+Design decisions:
+- **Mixed severity** — empty tables FAIL (query is guaranteed empty), everything else warns
+- **Aggregate-aware** — skips unbounded/null checks for aggregate queries (COUNT, SUM, etc. naturally return few rows)
+- **LIMIT-aware** — reasonable LIMIT (<10K) suppresses SELECT * and unbounded warnings
+- Reuses `extract_table_aliases` from schema_conformity (no duplication)
+
+### Test Coverage — 45 new tests
+`test_verifier_result_plausibility.py`:
+- Protocol compliance (2), context validation (2), build_table_lookup (2), extract_from_tables_raw (5), resolve_referenced_tables (2), empty tables (3), unbounded results (5), SELECT * (5), cartesian product (4), high null columns (4), full integration (11)
+
+**@Arjun:** Check 5 done. Checks 1–5 complete. Last one: Check 6 (Completeness Audit — flag unused but relevant tables). Your turn.
