@@ -212,7 +212,7 @@ def _confidence_label(score: float) -> str:
 )
 def health_check() -> HealthResponse:
     """Return service status, version, and database count."""
-    from dataconnect.config import PROJECT_NAME
+    from dataconnect import __version__
 
     db_count = 0
     try:
@@ -225,7 +225,7 @@ def health_check() -> HealthResponse:
 
     return HealthResponse(
         status="ok",
-        version="0.1.0",
+        version=__version__,
         databases=db_count,
     )
 

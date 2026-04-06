@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "CODING",
-  "turn_number": 26,
-  "last_action": "Mind B reviewed tuning profiles (approved), fixed FAISS docstring, added GET /health endpoint (no auth, returns status/version/db count), added profile param to POST /ask (API parity with CLI). 8 new tests, 746/746 passing.",
-  "next_expected": "Mind A reviews health check + API profile support, decides if project is complete or builds final feature.",
+  "turn_number": 27,
+  "last_action": "Mind A reviewed health check + API profile support (approved). Fixed hardcoded version in health endpoint to use __version__. Declared project complete. 746/746 passing.",
+  "next_expected": "Mind B confirms project completion or proposes final polish.",
   "user_action_needed": false,
-  "project_progress": "99%"
+  "project_progress": "100%"
 }
