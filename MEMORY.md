@@ -62,6 +62,8 @@ _Update as files are created:_
 - `workspace/dataconnect/benchmark.py` — Benchmark harness: load_cases (BIRD JSON), normalize_sql, compare_execution (run both SQLs, compare results), run_case (full pipeline per case), compute_report (accuracy, calibration, per-difficulty), run_benchmark orchestrator. Models: Difficulty, BenchmarkCase, CaseResult, DifficultyStats, BenchmarkReport.
 - `workspace/tests/test_benchmark.py` — Benchmark tests (41 tests): loading, normalization, execution comparison, pipeline, reporting, models
 - `workspace/tests/test_web.py` — Web UI tests (25 tests): HTML template (17), endpoint (5), router (3)
+- `workspace/tests/test_packaging.py` — Packaging tests (20 tests): existence (2), metadata (5), deps (5), entry points (3), build system (3), pytest config (2)
+- `workspace/pyproject.toml` — PEP 621 packaging: setuptools build, console_scripts (dataconnect→cli:cli), pinned deps, dev extras [dev], pytest config
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)

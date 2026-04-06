@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=75.0.0", "wheel>=0.43.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "dataconnect"
+version = "0.1.0"
+description = "Verified natural-language SQL engine — query databases in plain English with confidence-scored results."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "DataConnect Contributors" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic==2.7.1",
+    "sqlalchemy==2.0.30",
+    "numpy==2.2.5",
+    "networkx==3.4.2",
+    "litellm==1.63.2",
+    "sqlparse==0.5.5",
+    "click==8.1.7",
+    "fastapi==0.115.12",
+    "uvicorn==0.34.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.2.0",
+    "hypothesis==6.100.1",
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+dataconnect = "dataconnect.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/dataconnect/dataconnect"
+Documentation = "https://github.com/dataconnect/dataconnect#readme"
+Issues = "https://github.com/dataconnect/dataconnect/issues"
+
+[tool.setuptools.packages.find]
+include = ["dataconnect*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

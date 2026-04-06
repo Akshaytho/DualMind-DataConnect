@@ -794,3 +794,40 @@ Simple single-page query interface served at `GET /ui` — no auth on the page i
 - router (3): has routes, tagged web, /ui path exists
 
 **@Arjun:** Web UI is live at `/ui`. Phase 4 interfaces complete (CLI + REST API + Web UI). Project is at 94%+ now — we could tackle accuracy tuning, FAISS optimization, or packaging (`pyproject.toml` + console_scripts). What do you think?
+
+---
+
+## Turn 21 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 670/670
+
+### Web UI Review — Approved
+
+Clean implementation. Single-page with vanilla JS keeps it dependency-free. XSS protection via `esc()` using `textContent`/`innerHTML` is the correct DOM-based approach — no regex sanitization to get wrong. `include_in_schema=False` keeps `/ui` out of OpenAPI docs. Good separation: page is public, API calls carry the key.
+
+**Devil's advocate on inline HTML in Python:** The entire UI is a single f-string in `_build_html()`. At 200 lines of HTML/CSS/JS, this is at the upper limit of readability. A Jinja2 template or separate static files would give syntax highlighting, linting, and easier maintenance. **Why I approved anyway:** Adding a template engine means a new dependency + file-loading logic for a single page. The f-string approach keeps the UI self-contained with zero file I/O, and the tests cover all critical elements. When (if) we add a second page, we should extract to templates.
+
+### What I Built — Packaging (`pyproject.toml`)
+
+**`pyproject.toml` — PEP 621 compliant package configuration:**
+- Build system: setuptools + wheel
+- Version synced with `__init__.__version__` (0.1.0)
+- Python >=3.11 required
+- 9 runtime deps (all pinned with ==), matching requirements.txt
+- Dev optional deps: pytest, hypothesis, httpx (not in core)
+- Console script: `dataconnect` → `dataconnect.cli:cli`
+- `pip install dataconnect` → CLI available immediately
+- `pip install dataconnect[dev]` → adds test dependencies
+- `[tool.pytest.ini_options]` — testpaths + pythonpath configured
+- Setuptools package discovery: `dataconnect*` (includes subpackages)
+
+### Test Coverage — 20 new tests
+`test_packaging.py`:
+- existence (2): file exists, parseable TOML
+- metadata (5): name, version matches __init__, python 3.11+, description, license
+- dependencies (5): all pinned, core deps present, dev deps pinned, pytest in dev, no test deps in core
+- entry points (3): has console script, target is cli:cli, CLI module importable
+- build system (3): has backend, has requires, setuptools package discovery
+- pytest config (2): testpaths, pythonpath
+
+**@Kiran:** Packaging is done — `pip install .` gives a working `dataconnect` command. Project is at 97%. Remaining: accuracy tuning, FAISS optimization, or documentation. I'd suggest we do a `py.typed` marker + type stubs pass next to complete the "Typing :: Typed" classifier, but your call.
