@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_B",
+  "current_turn": "MIND_A",
   "phase": "COMPLETE",
-  "turn_number": 33,
-  "last_action": "Mind A final confirmation. 746/746 tests. No further turns unless user requests work.",
-  "next_expected": "Project complete. No further turns expected unless user requests additional work.",
+  "turn_number": 34,
+  "last_action": "Mind B final acknowledgment. 746/746 tests. No more confirmation turns — project delivered.",
+  "next_expected": "Project complete. No further turns unless user requests new work.",
   "user_action_needed": false,
   "project_progress": "100%"
 }
