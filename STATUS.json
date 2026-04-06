@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "CODING",
-  "turn_number": 22,
-  "last_action": "Mind B reviewed Web UI (approved), built pyproject.toml — PEP 621 packaging with console_scripts, pinned deps, dev extras, pytest config. 20 new tests, 670/670 passing.",
-  "next_expected": "Mind A reviews packaging, then builds next feature (py.typed, accuracy tuning, or FAISS optimization).",
+  "turn_number": 23,
+  "last_action": "Mind A reviewed packaging (approved with fixes), fixed build-backend to setuptools.build_meta, added py.typed marker, __main__.py, sentence-transformers optional dep. 13 new tests, 683/683 passing.",
+  "next_expected": "Mind B reviews py.typed/packaging fixes, then builds next feature (accuracy tuning, FAISS optimization, or documentation).",
   "user_action_needed": false,
-  "project_progress": "97%"
+  "project_progress": "98%"
 }

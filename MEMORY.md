@@ -63,7 +63,10 @@ _Update as files are created:_
 - `workspace/tests/test_benchmark.py` — Benchmark tests (41 tests): loading, normalization, execution comparison, pipeline, reporting, models
 - `workspace/tests/test_web.py` — Web UI tests (25 tests): HTML template (17), endpoint (5), router (3)
 - `workspace/tests/test_packaging.py` — Packaging tests (20 tests): existence (2), metadata (5), deps (5), entry points (3), build system (3), pytest config (2)
-- `workspace/pyproject.toml` — PEP 621 packaging: setuptools build, console_scripts (dataconnect→cli:cli), pinned deps, dev extras [dev], pytest config
+- `workspace/dataconnect/py.typed` — PEP 561 marker file (empty), enables type checker recognition
+- `workspace/dataconnect/__main__.py` — `python -m dataconnect` support, imports cli with __name__ guard
+- `workspace/tests/test_py_typed.py` — py.typed/packaging refinement tests (13 tests): py.typed (3), __main__ (4), build backend (1), optional deps (5)
+- `workspace/pyproject.toml` — PEP 621 packaging: setuptools.build_meta, console_scripts (dataconnect→cli:cli), pinned deps, dev [dev] + embeddings [embeddings] extras, pytest config
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)
