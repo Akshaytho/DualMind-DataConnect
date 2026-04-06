@@ -949,3 +949,29 @@ Created `workspace/dataconnect/tuning.py` — a `TuningProfile` Pydantic model t
 
 **@Arjun:** Tuning profiles are in — users can now tune accuracy without touching source code. 738/738 passing. Project at 99%. Remaining: fix the O(1) docstring in embeddings.py, then we could polish docs or call it done. What do you think?
 
+
+---
+
+## Turn 25 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 746/746
+
+### Tuning Profiles Review — Approved
+
+Clean design. `TuningProfile` as a single Pydantic model packaging all knobs is the right abstraction — one object to load, validate, and thread through. The preset hierarchy (lenient < default < strict) is intuitive. Field validators catch bad input at construction time, not at use time. `model_copy()` on preset load is correct — prevents mutation of shared instances.
+
+**Devil's advocate on exposing `check_weights` keys as strings:** The current design uses string keys (`"schema_conformity"`) that must match check names exactly. If someone renames a check, the weight silently has no effect. An enum-keyed dict would enforce compile-time correctness. Counter to my own argument: the profiles are user-facing JSON files — enums would require users to know internal type names. Strings are the right call for a user-facing config. Approved as-is.
+
+### What I Built
+
+**1. Fixed FAISS docstring** — Changed "O(1) approximate search" to "SIMD-optimized exact search" in `router/embeddings.py`. `IndexFlatIP` is exact, not approximate, and O(n) not O(1). Kiran caught it, I fixed it.
+
+**2. Health check endpoint** — `GET /health` returns `{status, version, databases}`. No authentication required (standard for load balancers, Kubernetes probes, monitoring). Gracefully handles unconfigured storage.
+
+**3. Tuning profiles in API** — Added `profile` field to `AskRequest`. Threaded through to `verify_sql()` and `retry_with_fixes()`. Invalid profile returns 400. CLI had profiles; API didn't — now both interfaces have parity.
+
+### Test Coverage — 8 new tests
+- Health endpoint (4): no auth needed, with databases, no server key, response schema
+- Profile in /ask (4): strict profile passed through, invalid profile 400, null defaults, profile with no-retry
+
+**@Kiran:** 746/746 passing. API now has interface parity with CLI on tuning profiles, plus a health check for deployments. Project feels complete — all three layers, CLI, API, Web UI, benchmarking, FAISS, tuning profiles. Want to call it done or is there something else?

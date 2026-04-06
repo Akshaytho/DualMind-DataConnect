@@ -737,6 +737,7 @@ class TestAppFactory:
         assert "/ask" in paths
         assert "/databases" in paths
         assert "/databases/{name}" in paths
+        assert "/health" in paths
 
     def test_openapi_schema(
         self, client: TestClient, auth_headers: dict[str, str]
@@ -781,3 +782,228 @@ class TestConfidenceLabel:
 
         assert _confidence_label(30.0) == "UNVERIFIED"
         assert _confidence_label(0.0) == "UNVERIFIED"
+
+
+# ── GET /health Tests ─────────────────────────────────────────────
+
+
+class TestHealthEndpoint:
+    """GET /health endpoint tests — no auth required."""
+
+    def test_health_no_auth(
+        self, tmp_path: Path, _server_key
+    ) -> None:
+        """Health check works without API key."""
+        app = create_app(storage_dir=tmp_path)
+        tc = TestClient(app)
+        resp = tc.get("/health")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "ok"
+        assert data["version"] == "0.1.0"
+        assert data["databases"] == 0
+
+    def test_health_with_databases(
+        self, tmp_path: Path, _server_key, sample_scan: ScanResult
+    ) -> None:
+        """Health check returns database count."""
+        from dataconnect.storage import StorageBackend
+
+        storage = StorageBackend(tmp_path)
+        storage.save_scan(sample_scan)
+
+        app = create_app(storage_dir=tmp_path)
+        tc = TestClient(app)
+        resp = tc.get("/health")
+        assert resp.status_code == 200
+        assert resp.json()["databases"] >= 1
+
+    def test_health_no_server_key(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Health check works even without server API key."""
+        monkeypatch.delenv("DATACONNECT_SERVER_API_KEY", raising=False)
+        app = create_app(storage_dir=tmp_path)
+        tc = TestClient(app)
+        resp = tc.get("/health")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
+
+    def test_health_response_schema(
+        self, tmp_path: Path, _server_key
+    ) -> None:
+        """Health response has expected fields."""
+        app = create_app(storage_dir=tmp_path)
+        tc = TestClient(app)
+        resp = tc.get("/health")
+        data = resp.json()
+        assert set(data.keys()) == {"status", "version", "databases"}
+
+
+# ── Profile in /ask Tests ─────────────────────────────────────────
+
+
+class TestAskWithProfile:
+    """POST /ask with tuning profile parameter."""
+
+    def test_ask_with_strict_profile(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        tmp_path: Path,
+        sample_scan: ScanResult,
+        sample_route: RouteResult,
+        sample_verification: VerificationResult,
+    ) -> None:
+        """Profile is passed through to verify/retry."""
+        from dataconnect.storage import StorageBackend
+
+        storage = StorageBackend(tmp_path)
+        storage.save_scan(sample_scan)
+
+        with (
+            patch(
+                "dataconnect.router.route_query",
+                return_value=sample_route,
+            ),
+            patch(
+                "dataconnect.generator.generate_sql",
+                return_value="SELECT COUNT(*) FROM orders",
+            ),
+            patch(
+                "dataconnect.verifier.retry.retry_with_fixes",
+                return_value=sample_verification,
+            ) as mock_retry,
+        ):
+            resp = client.post(
+                "/ask",
+                json={
+                    "question": "How many orders?",
+                    "database_name": "testdb",
+                    "model": "gpt-4o",
+                    "llm_api_key": "sk-test",
+                    "profile": "strict",
+                },
+                headers=auth_headers,
+            )
+
+        assert resp.status_code == 200
+        # Verify profile was passed to retry_with_fixes
+        call_kwargs = mock_retry.call_args
+        assert call_kwargs.kwargs["profile"].name == "strict"
+
+    def test_ask_with_invalid_profile(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        tmp_path: Path,
+        sample_scan: ScanResult,
+    ) -> None:
+        """Invalid profile returns 400."""
+        from dataconnect.storage import StorageBackend
+
+        storage = StorageBackend(tmp_path)
+        storage.save_scan(sample_scan)
+
+        resp = client.post(
+            "/ask",
+            json={
+                "question": "How many orders?",
+                "database_name": "testdb",
+                "model": "gpt-4o",
+                "llm_api_key": "sk-test",
+                "profile": "nonexistent_profile",
+            },
+            headers=auth_headers,
+        )
+        assert resp.status_code == 400
+
+    def test_ask_default_profile_when_null(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        tmp_path: Path,
+        sample_scan: ScanResult,
+        sample_route: RouteResult,
+        sample_verification: VerificationResult,
+    ) -> None:
+        """Null profile uses default."""
+        from dataconnect.storage import StorageBackend
+
+        storage = StorageBackend(tmp_path)
+        storage.save_scan(sample_scan)
+
+        with (
+            patch(
+                "dataconnect.router.route_query",
+                return_value=sample_route,
+            ),
+            patch(
+                "dataconnect.generator.generate_sql",
+                return_value="SELECT COUNT(*) FROM orders",
+            ),
+            patch(
+                "dataconnect.verifier.retry.retry_with_fixes",
+                return_value=sample_verification,
+            ) as mock_retry,
+        ):
+            resp = client.post(
+                "/ask",
+                json={
+                    "question": "How many orders?",
+                    "database_name": "testdb",
+                    "model": "gpt-4o",
+                    "llm_api_key": "sk-test",
+                },
+                headers=auth_headers,
+            )
+
+        assert resp.status_code == 200
+        call_kwargs = mock_retry.call_args
+        assert call_kwargs.kwargs["profile"].name == "default"
+
+    def test_ask_profile_no_retry(
+        self,
+        client: TestClient,
+        auth_headers: dict[str, str],
+        tmp_path: Path,
+        sample_scan: ScanResult,
+        sample_route: RouteResult,
+        sample_verification: VerificationResult,
+    ) -> None:
+        """Profile is passed to verify_sql when retry=false."""
+        from dataconnect.storage import StorageBackend
+
+        storage = StorageBackend(tmp_path)
+        storage.save_scan(sample_scan)
+
+        with (
+            patch(
+                "dataconnect.router.route_query",
+                return_value=sample_route,
+            ),
+            patch(
+                "dataconnect.generator.generate_sql",
+                return_value="SELECT COUNT(*) FROM orders",
+            ),
+            patch(
+                "dataconnect.verifier.verify_sql",
+                return_value=sample_verification,
+            ) as mock_verify,
+        ):
+            resp = client.post(
+                "/ask",
+                json={
+                    "question": "How many orders?",
+                    "database_name": "testdb",
+                    "model": "gpt-4o",
+                    "llm_api_key": "sk-test",
+                    "retry": False,
+                    "profile": "lenient",
+                },
+                headers=auth_headers,
+            )
+
+        assert resp.status_code == 200
+        call_kwargs = mock_verify.call_args
+        assert call_kwargs.kwargs["profile"].name == "lenient"

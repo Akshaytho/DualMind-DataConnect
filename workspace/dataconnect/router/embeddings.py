@@ -3,7 +3,7 @@
 Uses sentence-transformers to embed table descriptions and cosine
 similarity for nearest-neighbor search. Supports two backends:
 
-- **FAISS** (preferred): O(1) approximate search via IndexFlatIP.
+- **FAISS** (preferred): SIMD-optimized exact search via IndexFlatIP.
   Install with ``pip install dataconnect[faiss]``.
 - **NumPy** (fallback): exact dot-product search, sufficient for <100 tables.
 

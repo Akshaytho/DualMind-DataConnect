@@ -77,6 +77,10 @@ class AskRequest(BaseModel):
     retry: bool = Field(
         default=True, description="Enable fix-and-retry loop."
     )
+    profile: str | None = Field(
+        default=None,
+        description="Tuning profile: preset name (default/strict/lenient) or JSON path.",
+    )
 
 
 class CheckDetail(BaseModel):
@@ -131,6 +135,14 @@ class ErrorResponse(BaseModel):
     """Standard error response body."""
 
     detail: str
+
+
+class HealthResponse(BaseModel):
+    """GET /health response."""
+
+    status: str
+    version: str
+    databases: int
 
 
 # ── Storage helper ─────────────────────────────────────────────────
@@ -191,6 +203,31 @@ def _confidence_label(score: float) -> str:
 
 
 # ── Route handlers ─────────────────────────────────────────────────
+
+
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Health check — no authentication required.",
+)
+def health_check() -> HealthResponse:
+    """Return service status, version, and database count."""
+    from dataconnect.config import PROJECT_NAME
+
+    db_count = 0
+    try:
+        from dataconnect.storage import StorageBackend
+
+        storage = StorageBackend(_get_storage_dir())
+        db_count = len(storage.list_databases())
+    except Exception:
+        pass  # Storage not configured yet — still healthy
+
+    return HealthResponse(
+        status="ok",
+        version="0.1.0",
+        databases=db_count,
+    )
 
 
 @router.post(
@@ -264,8 +301,17 @@ def ask_question_endpoint(
     from dataconnect.generator import generate_sql
     from dataconnect.router import route_query
     from dataconnect.storage import StorageBackend
+    from dataconnect.tuning import get_profile
     from dataconnect.verifier import verify_sql
     from dataconnect.verifier.retry import retry_with_fixes
+
+    # Load tuning profile
+    try:
+        tuning = get_profile(request.profile)
+    except DataConnectError as exc:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # Load scan result
     try:
@@ -325,9 +371,10 @@ def ask_question_endpoint(
                 context,
                 model=request.model,
                 api_key=request.llm_api_key,
+                profile=tuning,
             )
         else:
-            verification = verify_sql(sql, context)
+            verification = verify_sql(sql, context, profile=tuning)
     except DataConnectError as exc:
         from fastapi import HTTPException
 

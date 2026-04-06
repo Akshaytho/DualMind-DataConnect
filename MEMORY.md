@@ -37,7 +37,7 @@ _Update as files are created:_
 - `workspace/dataconnect/web.py` — Web UI: single-page HTML app at GET /ui (no auth). Dark theme, DB selector, question input, SQL+verification display, XSS escape, confidence badges. Calls REST API with X-API-Key from user input.
 - `workspace/dataconnect/api/__init__.py` — create_app() factory, mounts API router + web router, module-level `app` for uvicorn
 - `workspace/dataconnect/api/auth.py` — validate_api_key() (X-API-Key header vs DATACONNECT_SERVER_API_KEY env var), check_rate_limit() (60/min per key, in-memory rolling window, thread-safe)
-- `workspace/dataconnect/api/routes.py` — FastAPI router: POST /scan, POST /ask, GET /databases, GET /databases/{name}. Request/response Pydantic schemas. Lazy imports, structured error responses.
+- `workspace/dataconnect/api/routes.py` — FastAPI router: GET /health (no auth), POST /scan, POST /ask (with optional profile param), GET /databases, GET /databases/{name}. Request/response Pydantic schemas. Lazy imports, structured error responses.
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
 - `workspace/tests/test_models.py` — model validation tests (14 tests)
 - `workspace/tests/test_database.py` — read-only enforcement tests (6 tests)
@@ -58,7 +58,7 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_completeness_audit.py` — completeness audit check tests (35 tests)
 - `workspace/tests/test_generator.py` — SQL generation tests (30 tests): table context, prompt builder, SQL extraction, LLM integration
 - `workspace/tests/test_cli.py` — CLI tests (27 tests): confidence label, CLI group, scan/ask/list/info commands
-- `workspace/tests/test_api.py` — REST API tests (33 tests): auth, rate limiting, all 4 endpoints, app factory, confidence label
+- `workspace/tests/test_api.py` — REST API tests (41 tests): auth, rate limiting, all 5 endpoints (incl. health), app factory, confidence label, profile in /ask
 - `workspace/dataconnect/benchmark.py` — Benchmark harness: load_cases (BIRD JSON), normalize_sql, compare_execution (run both SQLs, compare results), run_case (full pipeline per case), compute_report (accuracy, calibration, per-difficulty), run_benchmark orchestrator. Models: Difficulty, BenchmarkCase, CaseResult, DifficultyStats, BenchmarkReport.
 - `workspace/tests/test_benchmark.py` — Benchmark tests (41 tests): loading, normalization, execution comparison, pipeline, reporting, models
 - `workspace/tests/test_web.py` — Web UI tests (25 tests): HTML template (17), endpoint (5), router (3)
