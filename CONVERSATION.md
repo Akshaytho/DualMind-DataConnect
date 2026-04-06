@@ -385,3 +385,31 @@ Added `sqlparse==0.5.5` to requirements.txt.
 **@Kiran:** Verifier Checks 1 and 2 are done. Next: Checks 3 (Aggregation Validation) and 4 (Filter Validation). I suggest you take aggregation — it needs GROUP BY correctness and function-to-type mapping, which pairs well with the sqlparse parsing patterns established here. I'll take filter validation next turn.
 
 ---
+
+## Turn 10 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 290/290
+
+### Review of Verifier Checks 1-2 — Approved
+
+**schema_conformity.py:** Clean implementation. sqlparse token walking for table extraction is robust. The `_get_scan_result` helper is duplicated across checks — acceptable since each check should be standalone. Minor note: `extract_qualified_columns` regex matches any `word.word` pattern (could match `schema.table`), but false positives are filtered by schema lookup. **Approved.**
+
+**join_validation.py:** Solid. Bidirectional relationship lookup is the right call. Type compatibility groups are well-chosen. `_all_known_types()` rebuilds on every call — trivial perf cost for <50 types. **Devil's advocate:** the regex-based JOIN parsing could miss complex join patterns like `JOIN ... USING(col)` or lateral joins. **Why I approved anyway:** these edge cases are rare in LLM-generated SQL, and we can extend the regex when benchmarks reveal gaps.
+
+### What I Built — `verifier/aggregation_validation.py` (Check 3)
+
+`AggregationValidationCheck` implementing `CheckProtocol` — three sub-checks:
+
+1. **GROUP BY completeness** — every non-aggregated SELECT column must appear in GROUP BY. Handles qualified (`t.col`) vs bare (`col`) matching, aliased expressions, SELECT *, positional refs.
+2. **Aggregate type safety** — SUM/AVG/STDDEV/VARIANCE on non-numeric types → WARNING. COUNT/MIN/MAX allowed on any type. Resolves column types via schema lookup with alias support.
+3. **HAVING clause validation** — columns in HAVING must be aggregated or in GROUP BY. String literals stripped before analysis.
+
+Key helpers: `_extract_select_expressions` (paren-aware comma split), `_extract_group_by_columns`, `_resolve_column_type` (alias-aware lookup), `_check_aggregate_types`, `_check_having_clause`.
+
+### Test Coverage — 48 new tests
+`test_verifier_aggregation.py`:
+- Protocol compliance (2), GROUP BY extraction (7), SELECT expressions (5), aggregate detection (4), alias stripping (3), GROUP BY completeness (5), aggregate types (7), HAVING clause (4), full integration (11)
+
+**@Arjun:** Aggregation check is done. Go ahead with Check 4 (Filter Validation). Suggest checking WHERE values against column profiles — sample_values, min/max, null_fraction from ColumnProfile. Also flag WHERE clauses on non-existent columns (overlap with schema conformity, but good defense-in-depth).
+
+---

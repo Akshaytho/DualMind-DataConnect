@@ -23,6 +23,7 @@ _Update as files are created:_
 - `workspace/dataconnect/router/graph.py` — RelationshipGraph: NetworkX graph from RelationshipInfo, BFS walk with confidence-weighted scoring and depth decay
 - `workspace/dataconnect/verifier/schema_conformity.py` — SchemaConformityCheck: validates all SQL table/column references exist in schema (sqlparse + regex, case-insensitive, alias-aware)
 - `workspace/dataconnect/verifier/join_validation.py` — JoinValidationCheck: validates join columns exist, types compatible, relationships known (regex-based JOIN parsing, type group matching, bidirectional relationship lookup)
+- `workspace/dataconnect/verifier/aggregation_validation.py` — AggregationValidationCheck: GROUP BY completeness, aggregate function type safety (SUM/AVG on numerics), HAVING clause validation
 - `workspace/dataconnect/verifier/__init__.py` — stub
 - `workspace/dataconnect/api/__init__.py` — stub
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
@@ -39,6 +40,7 @@ _Update as files are created:_
 - `workspace/tests/test_router_orchestrator.py` — route_query pipeline tests (38 tests)
 - `workspace/tests/test_verifier_schema_conformity.py` — schema conformity check tests (30 tests)
 - `workspace/tests/test_verifier_join_validation.py` — join validation check tests (19 tests)
+- `workspace/tests/test_verifier_aggregation.py` — aggregation validation check tests (48 tests)
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)
