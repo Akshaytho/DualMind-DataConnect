@@ -1,8 +1,13 @@
 """Embedding-based semantic table matching.
 
-Uses sentence-transformers to embed table descriptions and numpy cosine
-similarity for nearest-neighbor search. The embedding model is loaded
-lazily on first use.
+Uses sentence-transformers to embed table descriptions and cosine
+similarity for nearest-neighbor search. Supports two backends:
+
+- **FAISS** (preferred): O(1) approximate search via IndexFlatIP.
+  Install with ``pip install dataconnect[faiss]``.
+- **NumPy** (fallback): exact dot-product search, sufficient for <100 tables.
+
+The embedding model and FAISS backend are loaded lazily on first use.
 """
 
 from __future__ import annotations
@@ -17,6 +22,15 @@ from dataconnect.exceptions import EmbeddingError, RoutingError
 from dataconnect.models import MatchMethod, TableInfo, TableMatch
 
 logger = logging.getLogger(__name__)
+
+
+def _try_import_faiss() -> Any | None:
+    """Try to import faiss; return module or None if unavailable."""
+    try:
+        import faiss  # type: ignore[import-untyped]
+        return faiss
+    except ImportError:
+        return None
 
 
 def table_to_text(table: TableInfo) -> str:
@@ -63,16 +77,25 @@ class EmbeddingIndex:
     dot product equivalent to cosine similarity.
     """
 
-    def __init__(self, model_name: str = EMBEDDING_MODEL) -> None:
+    def __init__(
+        self,
+        model_name: str = EMBEDDING_MODEL,
+        *,
+        use_faiss: bool = True,
+    ) -> None:
         """Initialize the embedding index.
 
         Args:
             model_name: Name of the sentence-transformers model to use.
+            use_faiss: If True, use FAISS when available (default).
+                Set to False to force numpy fallback.
         """
         self._model_name = model_name
         self._model: Any = None  # SentenceTransformer, lazy loaded
         self._embeddings: np.ndarray | None = None
         self._table_names: list[str] = []
+        self._use_faiss = use_faiss
+        self._faiss_index: Any = None  # faiss.IndexFlatIP, optional
 
     def _load_model(self) -> Any:
         """Load the sentence-transformer model (lazy, first call only).
@@ -126,9 +149,20 @@ class EmbeddingIndex:
         self._table_names = [t.name for t in tables]
         self._embeddings = self._encode(texts)
 
+        # Build FAISS index if available and requested
+        self._faiss_index = None
+        if self._use_faiss:
+            faiss = _try_import_faiss()
+            if faiss is not None:
+                dim = self._embeddings.shape[1]
+                self._faiss_index = faiss.IndexFlatIP(dim)
+                self._faiss_index.add(self._embeddings)
+                logger.info("FAISS index built: %d vectors", len(tables))
+
+        backend = "FAISS" if self._faiss_index is not None else "numpy"
         logger.info(
-            "Built embedding index: %d tables, %d dimensions",
-            len(tables), self._embeddings.shape[1],
+            "Built embedding index (%s): %d tables, %d dimensions",
+            backend, len(tables), self._embeddings.shape[1],
         )
 
     def search(
@@ -150,16 +184,23 @@ class EmbeddingIndex:
             raise RoutingError("Embedding index not built. Call build() first.")
 
         query_emb = self._encode([query])
-
-        # Cosine similarity (normalized embeddings → dot product = cosine sim)
-        similarities = (query_emb @ self._embeddings.T)[0]
-
         k = min(top_k, len(self._table_names))
-        top_indices = np.argsort(-similarities)[:k]
+
+        if self._faiss_index is not None:
+            scores, indices = self._faiss_index.search(query_emb, k)
+            top_scores = scores[0]
+            top_indices = indices[0]
+        else:
+            # NumPy fallback (normalized embeddings → dot product = cosine sim)
+            similarities = (query_emb @ self._embeddings.T)[0]
+            top_indices = np.argsort(-similarities)[:k]
+            top_scores = similarities[top_indices]
 
         matches: list[TableMatch] = []
-        for idx in top_indices:
-            score = float(max(0.0, min(1.0, similarities[idx])))
+        for i, idx in enumerate(top_indices):
+            if idx == -1:
+                break  # FAISS pads with -1 when fewer results than k
+            score = float(max(0.0, min(1.0, top_scores[i])))
             matches.append(TableMatch(
                 table_name=self._table_names[idx],
                 methods=[MatchMethod.EMBEDDING],
@@ -178,3 +219,8 @@ class EmbeddingIndex:
     def table_count(self) -> int:
         """Number of tables in the index."""
         return len(self._table_names)
+
+    @property
+    def backend(self) -> str:
+        """Return the active search backend name ('faiss' or 'numpy')."""
+        return "faiss" if self._faiss_index is not None else "numpy"

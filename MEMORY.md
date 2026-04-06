@@ -19,7 +19,7 @@ _Update as files are created:_
 - `workspace/dataconnect/scanner/profiler.py` — profile_table/profile_tables: data sampling + ColumnProfile stats (null_fraction, distinct_count, sample_values, min/max)
 - `workspace/dataconnect/scanner/relationships.py` — discover_relationships(): name matching (FK naming conventions) + value overlap (Jaccard similarity) for non-FK relationship discovery
 - `workspace/dataconnect/router/__init__.py` — route_query() orchestrator: embeddings + graph + LLM cross-check → merged RouteResult
-- `workspace/dataconnect/router/embeddings.py` — EmbeddingIndex: sentence-transformers + numpy cosine similarity for semantic table matching. table_to_text() converts TableInfo to embeddable text. Lazy model loading.
+- `workspace/dataconnect/router/embeddings.py` — EmbeddingIndex: sentence-transformers for encoding, FAISS (optional) or numpy fallback for search. table_to_text() converts TableInfo to embeddable text. Lazy model loading. _try_import_faiss() helper. use_faiss param, backend property.
 - `workspace/dataconnect/router/graph.py` — RelationshipGraph: NetworkX graph from RelationshipInfo, BFS walk with confidence-weighted scoring and depth decay
 - `workspace/dataconnect/verifier/schema_conformity.py` — SchemaConformityCheck: validates all SQL table/column references exist in schema (sqlparse + regex, case-insensitive, alias-aware)
 - `workspace/dataconnect/verifier/join_validation.py` — JoinValidationCheck: validates join columns exist, types compatible, relationships known (regex-based JOIN parsing, type group matching, bidirectional relationship lookup)
@@ -63,6 +63,7 @@ _Update as files are created:_
 - `workspace/tests/test_benchmark.py` — Benchmark tests (41 tests): loading, normalization, execution comparison, pipeline, reporting, models
 - `workspace/tests/test_web.py` — Web UI tests (25 tests): HTML template (17), endpoint (5), router (3)
 - `workspace/tests/test_packaging.py` — Packaging tests (20 tests): existence (2), metadata (5), deps (5), entry points (3), build system (3), pytest config (2)
+- `workspace/tests/test_faiss_optimization.py` — FAISS optimization tests (25 tests): _try_import_faiss (2), FAISS backend (12), numpy fallback (4), consistency (3), packaging (4)
 - `workspace/dataconnect/py.typed` — PEP 561 marker file (empty), enables type checker recognition
 - `workspace/dataconnect/__main__.py` — `python -m dataconnect` support, imports cli with __name__ guard
 - `workspace/tests/test_py_typed.py` — py.typed/packaging refinement tests (13 tests): py.typed (3), __main__ (4), build backend (1), optional deps (5)
