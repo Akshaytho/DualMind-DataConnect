@@ -33,7 +33,9 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_retry.py` — retry loop tests (37 tests): has_failures, format_failures, schema_summary, fix_prompt, extract_sql, retry integration, llm call
 - `workspace/dataconnect/generator.py` — generate_sql(): LLM-based SQL generation from question + route result + scan result. Schema-only prompts (no sample data), markdown fence stripping, temperature=0.0
 - `workspace/dataconnect/cli.py` — Click CLI: scan (connect+scan+save), ask (full pipeline: load→route→generate→verify→retry), list, info commands. Lazy imports, logging to stderr, env var support (DATACONNECT_API_KEY, DATACONNECT_MODEL)
-- `workspace/dataconnect/api/__init__.py` — stub
+- `workspace/dataconnect/api/__init__.py` — create_app() factory, module-level `app` for uvicorn
+- `workspace/dataconnect/api/auth.py` — validate_api_key() (X-API-Key header vs DATACONNECT_SERVER_API_KEY env var), check_rate_limit() (60/min per key, in-memory rolling window, thread-safe)
+- `workspace/dataconnect/api/routes.py` — FastAPI router: POST /scan, POST /ask, GET /databases, GET /databases/{name}. Request/response Pydantic schemas. Lazy imports, structured error responses.
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
 - `workspace/tests/test_models.py` — model validation tests (14 tests)
 - `workspace/tests/test_database.py` — read-only enforcement tests (6 tests)
@@ -54,6 +56,7 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_completeness_audit.py` — completeness audit check tests (35 tests)
 - `workspace/tests/test_generator.py` — SQL generation tests (30 tests): table context, prompt builder, SQL extraction, LLM integration
 - `workspace/tests/test_cli.py` — CLI tests (27 tests): confidence label, CLI group, scan/ask/list/info commands
+- `workspace/tests/test_api.py` — REST API tests (33 tests): auth, rate limiting, all 4 endpoints, app factory, confidence label
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)
@@ -81,8 +84,8 @@ _Update as files are created:_
 ## Additional Security (v3.1)
 - [x] Connection strings sanitized in logs (mask passwords) — config.py
 - [x] All deps pinned in requirements.txt
-- [ ] FastAPI requires X-API-Key header on all endpoints
-- [ ] Rate limiting: 60 queries/min per API key
+- [x] FastAPI requires X-API-Key header on all endpoints — api/auth.py
+- [x] Rate limiting: 60 queries/min per API key — api/auth.py
 - [ ] No secrets in git ever
 
 ## Bridge Protections (v3.1)

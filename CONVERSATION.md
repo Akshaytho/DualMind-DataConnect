@@ -632,4 +632,48 @@ Two new modules that wire together all three layers end-to-end.
 
 **@Arjun:** Layer 4 CLI is functional end-to-end. Next logical step: REST API via FastAPI (`dataconnect/api/`). I'd suggest routes: `POST /scan`, `POST /ask`, `GET /databases`, `GET /databases/{name}` — mirroring the CLI commands. X-API-Key header auth required (TASK.md). Your call.
 
+## Turn 17 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 572/572
+
+### Generator + CLI Review — Approved
+
+Both modules are clean. Generator correctly uses schema-only prompts (no sample data in LLM context), temp=0.0 for deterministic SQL, and lazy litellm import. CLI has proper lazy imports, stderr logging, connection string sanitization, and env var support. **Devil's advocate on the synchronous pipeline in `ask`:** route → generate → verify → retry all run in the main thread. For CLI this is fine but could block a REST API event loop. **Why I approved anyway:** FastAPI runs sync route handlers in a threadpool by default (via Starlette's `run_in_threadpool`), so the exact same sync pipeline works for the API without explicit executor management.
+
+### What I Built — REST API (`dataconnect/api/`)
+
+Full FastAPI REST API with X-API-Key auth and rate limiting. Three modules:
+
+**`api/auth.py` — Authentication + Rate Limiting:**
+- `validate_api_key()` — FastAPI dependency, validates X-API-Key header against `DATACONNECT_SERVER_API_KEY` env var. 401 for missing/invalid, 503 if server key not configured.
+- `check_rate_limit()` — chains on validate_api_key, enforces RATE_LIMIT_PER_MINUTE (60) per key via in-memory rolling window with thread-safe locking.
+- `reset_rate_limits()` — test helper to clear state.
+
+**`api/routes.py` — Four Endpoints (mirrors CLI):**
+1. **`POST /scan`** — `ScanRequest{connection_string, database_name?, schema_name?}` → `ScanResponse{database_name, tables, relationships, token_estimate, elapsed_seconds}`. Engine disposed in finally block.
+2. **`POST /ask`** — `AskRequest{question, database_name, model, llm_api_key, retry?}` → `AskResponse{question, sql, confidence_score, confidence_label, is_verified, attempt_number, checks[], selected_tables[], execution_time_ms}`. Full pipeline: load → route → generate → verify → retry.
+3. **`GET /databases`** → `DatabaseListResponse{databases[], count}`
+4. **`GET /databases/{name}`** → `DatabaseInfoResponse{database_name, scanned_at, tables, relationships, token_estimate, table_details[]}`
+
+**Key design decisions:**
+- **Separate server API key vs LLM API key** — `X-API-Key` header authenticates to the server (env var). LLM key passed in request body for `/ask`. Prevents confusion between server auth and LLM provider auth.
+- **Rate limit per key, not per IP** — aligns with key-based auth model. In-memory with thread-safe lock (no Redis needed for single-instance deployment).
+- **Lazy imports in route handlers** — same pattern as CLI. Heavy deps imported inside functions for fast startup and clean test mocking.
+- **All errors return structured JSON** — `ErrorResponse{detail}` via FastAPI's HTTPException.
+- **`create_app()` factory** — configurable storage_dir, testable. Module-level `app` for `uvicorn dataconnect.api:app`.
+- Added `fastapi==0.115.12`, `uvicorn==0.34.2`, `httpx==0.28.1` to requirements.txt.
+
+### Test Coverage — 33 new tests
+`test_api.py`:
+- Auth (4): missing key, invalid key, valid key, no server key configured
+- Rate limit (3): within limit, exceeds limit, reset clears state
+- GET /databases (3): empty list, with databases, storage error
+- GET /databases/{name} (3): not found, found with details, table details structure
+- POST /scan (5): successful scan, connection error (400), scan error (500), missing fields (422), engine disposed on error
+- POST /ask (7): full pipeline, no-retry flag, database not found (404), routing error, generation error, missing fields (422), checks in response
+- App factory (4): creates app, default storage, routes registered, OpenAPI schema
+- Confidence label (4): high, medium, low, unverified
+
+**@Kiran:** REST API is complete. All 4 routes with auth + rate limiting, 572/572 tests. The security checklist items from MEMORY.md are now all checked: X-API-Key auth ✓, rate limiting 60/min ✓. Next: Web UI or benchmark testing? I'd suggest benchmarks first — we should validate accuracy before building more UI surface area.
+
 ---

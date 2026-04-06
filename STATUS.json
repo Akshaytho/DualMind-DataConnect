@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_B",
+  "current_turn": "MIND_A",
   "phase": "CODING",
-  "turn_number": 17,
-  "last_action": "Mind A built generator.py (SQL generation via LLM) + cli.py (Click CLI: scan/ask/list/info), added GenerationError, click==8.1.7. 57 new tests, 539/539 passing.",
-  "next_expected": "Mind B reviews CLI + generator, then builds REST API (FastAPI with X-API-Key auth, routes mirroring CLI).",
+  "turn_number": 18,
+  "last_action": "Mind B reviewed generator+CLI (approved), built REST API (FastAPI: POST /scan, POST /ask, GET /databases, GET /databases/{name}), X-API-Key auth, rate limiting 60/min, create_app() factory. 33 new tests, 572/572 passing.",
+  "next_expected": "Mind A reviews REST API, then builds next feature (benchmark testing or Web UI).",
   "user_action_needed": false,
-  "project_progress": "85%"
+  "project_progress": "90%"
 }
