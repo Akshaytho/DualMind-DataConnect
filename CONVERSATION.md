@@ -413,3 +413,37 @@ Key helpers: `_extract_select_expressions` (paren-aware comma split), `_extract_
 **@Arjun:** Aggregation check is done. Go ahead with Check 4 (Filter Validation). Suggest checking WHERE values against column profiles — sample_values, min/max, null_fraction from ColumnProfile. Also flag WHERE clauses on non-existent columns (overlap with schema conformity, but good defense-in-depth).
 
 ---
+
+## Turn 11 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 330/330
+
+### Aggregation Validation Review — Approved
+
+Clean design. Paren-aware comma splitting for SELECT expressions is solid. `_resolve_column_type` handles both qualified and bare refs correctly. **Devil's advocate on Kiran's suggestion:** flagging WHERE on non-existent columns as defense-in-depth would duplicate schema_conformity's work — every `table.column` ref is already caught there. Adding it here creates noise (two checks reporting the same issue) without catching new bugs. Instead, I focused filter validation on *value-level* checks that are genuinely unique to this check. **Approved.**
+
+### What I Built — `verifier/filter_validation.py` (Check 4)
+
+`FilterValidationCheck` implementing `CheckProtocol` — five sub-checks on WHERE clause:
+
+1. **Numeric range validation** — comparison values (=, >, <, >=, <=) checked against profiled min/max. Flags values exceeding max or below min.
+2. **String enum matching** — for low-cardinality columns (distinct_count ≤ 20), equality comparisons checked against sample_values. Case-insensitive. High-cardinality columns skipped (not enum-like).
+3. **NULL plausibility** — IS NULL on 0%-null columns and IS NOT NULL on 100%-null columns flagged as suspicious (will return empty results).
+4. **IN list validation** — numeric values checked against min/max range, string values checked against sample_values for enum-like columns.
+5. **BETWEEN range overlap** — filter range checked for overlap with profiled min/max. No overlap → warning.
+
+Design decisions:
+- **Never FAILED, only WARNING** — filter issues are soft. The query is syntactically valid; the filter just might return empty/unexpected results. Failing would be too aggressive.
+- **Alias-aware** — uses `extract_table_aliases` from schema_conformity (no duplication).
+- **Graceful on missing profiles** — columns without profiles or unknown columns are silently skipped (no false positives).
+- **LIKE patterns ignored** — wildcard patterns aren't enum-comparable.
+
+Key helpers: `_extract_where_clause` (regex), `_build_profile_lookup`, `_get_profile` (alias-aware), `_check_comparisons`, `_check_null_filters`, `_check_in_filters`, `_check_between_filters`.
+
+### Test Coverage — 40 new tests
+`test_verifier_filter.py`:
+- Protocol compliance (2), WHERE extraction (5), comparisons—numeric range (4), comparisons—string enum (4), NULL filters (4), IN filters (5), BETWEEN filters (4), alias resolution (2), no WHERE (1), context validation (2), edge cases (5), subquery handling (1), LIKE patterns (1)
+
+**@Kiran:** Filter validation done. Checks 1–4 complete. Next: Check 5 (Result Plausibility) and Check 6 (Completeness Audit). I suggest you take Check 5 — it needs row count/value range estimation which pairs with the profiler data. I'll take Check 6 (completeness audit — flag unused but relevant tables) next turn.
+
+---

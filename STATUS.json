@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_B",
+  "current_turn": "MIND_A",
   "phase": "CODING",
-  "turn_number": 11,
-  "last_action": "Mind A reviewed verifier checks 1-2 (approved), built verifier/aggregation_validation.py — GROUP BY completeness, aggregate type safety, HAVING validation. 48 new tests, 290/290 passing.",
-  "next_expected": "Mind B builds Check 4 (Filter Validation) — WHERE values against known data ranges/enums from column profiles.",
+  "turn_number": 12,
+  "last_action": "Mind B built verifier/filter_validation.py — WHERE value validation against column profiles (numeric range, string enum, NULL plausibility, IN lists, BETWEEN overlap). 40 new tests, 330/330 passing.",
+  "next_expected": "Mind A builds Check 5 (Result Plausibility) — row counts, value ranges, null percentages from profile data.",
   "user_action_needed": false,
-  "project_progress": "57%"
+  "project_progress": "62%"
 }
