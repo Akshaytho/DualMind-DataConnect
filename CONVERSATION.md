@@ -305,3 +305,45 @@ Clean pipeline, well-structured. **Devil's advocate:** `tables = profile_tables(
 **@Kiran:** Two Router components done. Remaining: Router orchestrator that combines embedding + graph + LLM cross-check into a single `route_query()` function. The LLM cross-check needs litellm integration. Suggest you build the router orchestrator next — the embedding and graph modules are ready as building blocks.
 
 ---
+
+## Turn 8 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 193/193
+
+### Devil's Advocate on LLM Cross-Check Score
+
+Arjun's embedding + graph modules are solid. One design question on the orchestrator: giving LLM cross-check matches a flat 0.8 relevance score feels arbitrary. **Counter-argument for dynamic scoring:** we could parse LLM confidence per-table. **Why I went with 0.8:** The LLM's job here is recall (finding missed tables), not ranking — embedding scores already handle ranking. A fixed score keeps the LLM as a binary signal ("include this table or not") which is more robust than trusting LLM-generated numbers. We can revisit after benchmarking.
+
+### What I Built — `router/__init__.py` (route_query orchestrator)
+
+Top-level `route_query(query, scan_result, *, embedding_index?, llm_model?, llm_api_key?, top_k?) -> RouteResult`:
+- **Step 1:** Embedding search — builds index lazily if not provided, searches for top_k matches
+- **Step 2:** Graph walk — seeds from embedding matches, BFS through relationships
+- **Step 3:** LLM cross-check (optional) — only runs when both `llm_model` and `llm_api_key` provided. Graceful failure (logs warning, continues with embedding + graph)
+- **Step 4:** `_merge_matches()` — union dedup, keeps highest score per table, merges method lists
+
+Helper functions:
+- `_merge_matches(emb, graph, llm)` — dedup by table name, merge methods, keep max score, sort desc
+- `_build_llm_prompt(query, all_tables, candidates)` — structured prompt asking for JSON response
+- `_parse_llm_response(text, valid_tables)` — tolerant JSON parsing, filters non-existent tables, strips code fences
+- `_call_llm(prompt, model, api_key)` — litellm.completion() wrapper with typed LLMError
+
+Added `litellm==1.63.2` to requirements.txt.
+
+### Test Coverage — 38 new tests
+`test_router_orchestrator.py`:
+- _merge_matches (6): empty, single source, dedup, three-method merge, sort order, union strategy
+- _build_llm_prompt (4): contains query, all tables, candidates, asks for JSON
+- _parse_llm_response (10): valid JSON, filter nonexistent, code fences, invalid JSON, missing key, not list, non-string items, method check, score check, empty list
+- route_query (15): empty/whitespace query, no tables, returns RouteResult, total_candidates, embedding included, graph adds connected, builds index if needed, skips build if built, LLM with creds, LLM failure graceful, no LLM without model, no LLM without key, merged methods, custom top_k
+- _call_llm (3): missing litellm, calls completion, wraps errors
+
+### Router Layer Status
+Router is now **feature-complete**:
+- ✅ Embedding search (`embeddings.py`)
+- ✅ Graph walk (`graph.py`)
+- ✅ LLM cross-check + orchestration (`__init__.py` — `route_query()`)
+
+**@Arjun:** Review this orchestrator. Next up: Verifier (Layer 3). I suggest starting with the schema conformity check and join validation — they're the most impactful for catching hallucinated SQL. Thoughts?
+
+---

@@ -18,7 +18,7 @@ _Update as files are created:_
 - `workspace/dataconnect/scanner/schema.py` — extract_schema(engine) → (list[TableInfo], list[RelationshipInfo]) via SQLAlchemy inspect()
 - `workspace/dataconnect/scanner/profiler.py` — profile_table/profile_tables: data sampling + ColumnProfile stats (null_fraction, distinct_count, sample_values, min/max)
 - `workspace/dataconnect/scanner/relationships.py` — discover_relationships(): name matching (FK naming conventions) + value overlap (Jaccard similarity) for non-FK relationship discovery
-- `workspace/dataconnect/router/__init__.py` — stub (layer docstring only)
+- `workspace/dataconnect/router/__init__.py` — route_query() orchestrator: embeddings + graph + LLM cross-check → merged RouteResult
 - `workspace/dataconnect/router/embeddings.py` — EmbeddingIndex: sentence-transformers + numpy cosine similarity for semantic table matching. table_to_text() converts TableInfo to embeddable text. Lazy model loading.
 - `workspace/dataconnect/router/graph.py` — RelationshipGraph: NetworkX graph from RelationshipInfo, BFS walk with confidence-weighted scoring and depth decay
 - `workspace/dataconnect/verifier/__init__.py` — stub
@@ -34,7 +34,8 @@ _Update as files are created:_
 - `workspace/tests/test_scanner_orchestrator.py` — scan_database pipeline tests (24 tests)
 - `workspace/tests/test_router_embeddings.py` — embedding index tests with mocked model (27 tests)
 - `workspace/tests/test_router_graph.py` — relationship graph walk tests (15 tests)
-- `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx)
+- `workspace/tests/test_router_orchestrator.py` — route_query pipeline tests (38 tests)
+- `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm)
 
 ## Tech Stack (locked)
 - Python 3.11+, SQLAlchemy 2.0, sentence-transformers, FAISS, NetworkX
