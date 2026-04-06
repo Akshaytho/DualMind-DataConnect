@@ -58,3 +58,8 @@ class RateLimitError(DataConnectError):
 # LLM errors
 class LLMError(DataConnectError):
     """Error calling LLM provider."""
+
+
+# Generation errors
+class GenerationError(DataConnectError):
+    """Error generating SQL from natural language."""

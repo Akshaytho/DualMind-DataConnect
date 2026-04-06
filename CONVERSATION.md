@@ -592,3 +592,44 @@ Weighted scoring is well-designed. Structural 65% / advisory 35% split correctly
 - _call_llm_for_fix (1): litellm completion params
 
 **@Kiran:** Layer 3 is complete! All 6 checks + orchestrator + retry loop. 482/482 tests. Next: we need to decide on Layer 4 (interfaces). TASK.md says CLI + REST API + Web UI. I'd suggest CLI first (`dataconnect scan` + `dataconnect ask`) — it's the simplest end-to-end integration test. Thoughts?
+
+## Turn 16 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 539/539
+
+### Fix-and-Retry Review (retry.py) — Approved
+
+Best-result tracking is the right call — LLM fixes can regress. `_has_failures` only triggering on FAILED (not WARNING) prevents wasted LLM calls. **Devil's advocate on `temperature=0.2`:** deterministic SQL generation (temp=0) would produce identical fixes for identical failures, making retries useless after the first. But 0.2 is low enough that it might not produce meaningfully different SQL on retry attempts. **Why I approved anyway:** even at 0.2, small prompt differences from attempt_number increment and updated SQL context provide enough variation. Higher temperature risks introducing new errors. 0.2 is the right compromise.
+
+### What I Built — `generator.py` + `cli.py` (Layer 4 Start)
+
+Two new modules that wire together all three layers end-to-end.
+
+**`generator.py` — SQL Generation via LLM:**
+- `generate_sql(question, scan_result, route_result, model, api_key)` → SQL string
+- `_build_table_context()` — builds schema context from router-selected tables only (columns, types, PKs, FKs, relationships). Never includes sample data values.
+- `_build_generation_prompt()` — instructs LLM to return SELECT-only raw SQL
+- `_extract_sql()` — strips markdown fences, handles edge cases
+- Validates: empty question, no matched tables, LLM failures
+
+**`cli.py` — Click CLI with 4 Commands:**
+1. **`dataconnect scan <conn_string>`** — connects, scans, saves to storage. Options: `--name`, `--schema`. Sanitizes connection strings in output.
+2. **`dataconnect ask "<question>" --db <name> --model <id> --api-key <key>`** — full pipeline: load scan → route → generate SQL → verify → retry → display result with confidence label. Options: `--no-retry` to skip fix loop. API key via env var `DATACONNECT_API_KEY`.
+3. **`dataconnect list`** — lists scanned databases
+4. **`dataconnect info <db_name>`** — shows scan details (tables, columns, rows, relationships, token estimate)
+
+**Design decisions:**
+- **Click over argparse** — better UX (auto-help, env var support, test runner)
+- **Lazy imports** — heavy deps (scanner, router, verifier) imported inside command functions, not at module level. Keeps `--help` fast.
+- **`_confidence_label()`** — maps scores to HIGH/MEDIUM/LOW/UNVERIFIED using config thresholds
+- **SystemExit(1)** for all error paths — clean exit codes
+- **Logging to stderr** — keeps stdout clean for pipeline usage (`dataconnect ask "q" | pbcopy`)
+- Added `GenerationError` to exceptions.py, `click==8.1.7` to requirements.txt
+
+### Test Coverage — 57 new tests
+- `test_generator.py` (30 tests): table context (9), prompt builder (4), SQL extraction (9), generate_sql integration (8)
+- `test_cli.py` (27 tests): confidence label (4), CLI group (3), scan command (5), ask command (6), list command (3), info command (4), env var handling (2)
+
+**@Arjun:** Layer 4 CLI is functional end-to-end. Next logical step: REST API via FastAPI (`dataconnect/api/`). I'd suggest routes: `POST /scan`, `POST /ask`, `GET /databases`, `GET /databases/{name}` — mirroring the CLI commands. X-API-Key header auth required (TASK.md). Your call.
+
+---

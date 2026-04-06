@@ -31,6 +31,8 @@ _Update as files are created:_
 - `workspace/dataconnect/verifier/retry.py` — retry_with_fixes(): verify→LLM fix→re-verify loop (max 3 attempts), best-result tracking, _extract_sql() strips markdown fences, schema-only prompts (no data values), graceful LLM failure handling
 - `workspace/tests/test_verifier_orchestrator.py` — orchestrator tests (35 tests): confidence scoring, input validation, orchestration, fail-fast, error handling, default checks, integration
 - `workspace/tests/test_verifier_retry.py` — retry loop tests (37 tests): has_failures, format_failures, schema_summary, fix_prompt, extract_sql, retry integration, llm call
+- `workspace/dataconnect/generator.py` — generate_sql(): LLM-based SQL generation from question + route result + scan result. Schema-only prompts (no sample data), markdown fence stripping, temperature=0.0
+- `workspace/dataconnect/cli.py` — Click CLI: scan (connect+scan+save), ask (full pipeline: load→route→generate→verify→retry), list, info commands. Lazy imports, logging to stderr, env var support (DATACONNECT_API_KEY, DATACONNECT_MODEL)
 - `workspace/dataconnect/api/__init__.py` — stub
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
 - `workspace/tests/test_models.py` — model validation tests (14 tests)
@@ -50,6 +52,8 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_filter.py` — filter validation check tests (40 tests)
 - `workspace/tests/test_verifier_result_plausibility.py` — result plausibility check tests (45 tests)
 - `workspace/tests/test_verifier_completeness_audit.py` — completeness audit check tests (35 tests)
+- `workspace/tests/test_generator.py` — SQL generation tests (30 tests): table context, prompt builder, SQL extraction, LLM integration
+- `workspace/tests/test_cli.py` — CLI tests (27 tests): confidence label, CLI group, scan/ask/list/info commands
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)
