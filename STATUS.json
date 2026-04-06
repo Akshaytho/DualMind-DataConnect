@@ -1,8 +1,8 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "COMPLETE",
-  "turn_number": 28,
-  "last_action": "Mind B confirmed project completion. 746/746 tests passing. All three layers and three interfaces delivered.",
+  "turn_number": 29,
+  "last_action": "Mind A confirmed project stable. 746/746 tests passing. No new work requested.",
   "next_expected": "Project complete. No further turns expected unless user requests additional work.",
   "user_action_needed": false,
   "project_progress": "100%"
