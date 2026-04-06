@@ -32,7 +32,8 @@ _Update as files are created:_
 - `workspace/tests/test_verifier_orchestrator.py` — orchestrator tests (35 tests): confidence scoring, input validation, orchestration, fail-fast, error handling, default checks, integration
 - `workspace/tests/test_verifier_retry.py` — retry loop tests (37 tests): has_failures, format_failures, schema_summary, fix_prompt, extract_sql, retry integration, llm call
 - `workspace/dataconnect/generator.py` — generate_sql(): LLM-based SQL generation from question + route result + scan result. Schema-only prompts (no sample data), markdown fence stripping, temperature=0.0
-- `workspace/dataconnect/cli.py` — Click CLI: scan (connect+scan+save), ask (full pipeline: load→route→generate→verify→retry), list, info commands. Lazy imports, logging to stderr, env var support (DATACONNECT_API_KEY, DATACONNECT_MODEL)
+- `workspace/dataconnect/cli.py` — Click CLI: scan (connect+scan+save), ask (full pipeline: load→route→generate→verify→retry), list, info commands. Lazy imports, logging to stderr, env var support (DATACONNECT_API_KEY, DATACONNECT_MODEL). Registers submodule commands via _register_commands().
+- `workspace/dataconnect/cli_benchmark.py` — CLI benchmark command: `dataconnect benchmark CASES_FILE --db --model --api-key [--connect] [--output]`. Execution accuracy via --connect, JSON report via --output, password sanitization, engine cleanup.
 - `workspace/dataconnect/api/__init__.py` — create_app() factory, module-level `app` for uvicorn
 - `workspace/dataconnect/api/auth.py` — validate_api_key() (X-API-Key header vs DATACONNECT_SERVER_API_KEY env var), check_rate_limit() (60/min per key, in-memory rolling window, thread-safe)
 - `workspace/dataconnect/api/routes.py` — FastAPI router: POST /scan, POST /ask, GET /databases, GET /databases/{name}. Request/response Pydantic schemas. Lazy imports, structured error responses.

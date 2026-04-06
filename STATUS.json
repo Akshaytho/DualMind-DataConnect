@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_B",
+  "current_turn": "MIND_A",
   "phase": "CODING",
-  "turn_number": 19,
-  "last_action": "Mind A reviewed REST API (approved), built benchmark.py — BIRD-format benchmark harness with execution accuracy comparison, per-difficulty breakdown, confidence calibration metrics. 41 new tests, 613/613 passing.",
-  "next_expected": "Mind B reviews benchmark harness, then builds CLI benchmark command or Web UI.",
+  "turn_number": 20,
+  "last_action": "Mind B reviewed benchmark harness (approved), built CLI benchmark command with --connect/--output flags, split cli.py into cli.py + cli_benchmark.py (400-line rule). 12 new tests, 625/625 passing.",
+  "next_expected": "Mind A reviews CLI benchmark command, then builds Web UI or next feature.",
   "user_action_needed": false,
-  "project_progress": "92%"
+  "project_progress": "94%"
 }

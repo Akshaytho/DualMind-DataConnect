@@ -331,6 +331,16 @@ def info(ctx: click.Context, db_name: str) -> None:
             click.echo(f"  {table.name} ({cols} columns, ~{rows:,} rows)")
 
 
+def _register_commands() -> None:
+    """Register additional CLI commands from submodules."""
+    from dataconnect.cli_benchmark import register_benchmark
+
+    register_benchmark(cli)
+
+
+_register_commands()
+
+
 def main() -> None:
     """Entry point for console_scripts."""
     cli()
