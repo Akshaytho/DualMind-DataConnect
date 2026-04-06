@@ -68,3 +68,8 @@ class GenerationError(DataConnectError):
 # Benchmark errors
 class BenchmarkError(DataConnectError):
     """Error during benchmark execution."""
+
+
+# Tuning errors
+class TuningError(DataConnectError):
+    """Invalid or missing tuning profile."""

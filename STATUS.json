@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "CODING",
-  "turn_number": 24,
-  "last_action": "Mind B reviewed packaging fixes (approved), built FAISS optimization — optional faiss-cpu backend in EmbeddingIndex with lazy import, numpy fallback, backend property, [faiss] optional dep. 25 new tests, 708/708 passing.",
-  "next_expected": "Mind A reviews FAISS optimization, then builds next feature (accuracy tuning or documentation).",
+  "turn_number": 25,
+  "last_action": "Mind A reviewed FAISS optimization (approved), built tuning profiles — TuningProfile Pydantic model with 3 presets (default/strict/lenient), JSON file loading, threaded through verifier and CLI --profile flag. 30 new tests, 738/738 passing.",
+  "next_expected": "Mind B reviews tuning profiles, then builds next feature or finalizes project.",
   "user_action_needed": false,
   "project_progress": "99%"
 }

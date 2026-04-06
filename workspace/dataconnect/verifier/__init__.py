@@ -11,6 +11,7 @@ from typing import Any
 
 from dataconnect.exceptions import VerificationError
 from dataconnect.models import CheckResult, CheckStatus, VerificationResult
+from dataconnect.tuning import TuningProfile
 from dataconnect.verifier.aggregation_validation import AggregationValidationCheck
 from dataconnect.verifier.base import CheckProtocol
 from dataconnect.verifier.completeness_audit import CompletenessAuditCheck
@@ -57,7 +58,12 @@ _STATUS_SCORES: dict[CheckStatus, float] = {
 _VERIFIED_THRESHOLD = 50.0
 
 
-def compute_confidence(checks: list[CheckResult]) -> float:
+def compute_confidence(
+    checks: list[CheckResult],
+    *,
+    weights: dict[str, float] | None = None,
+    status_scores: dict[CheckStatus, float] | None = None,
+) -> float:
     """Compute weighted confidence score from check results.
 
     Each check contributes its weight * status score.
@@ -65,6 +71,10 @@ def compute_confidence(checks: list[CheckResult]) -> float:
 
     Args:
         checks: List of completed check results.
+        weights: Per-check weight overrides (from TuningProfile).
+            Defaults to module-level ``_CHECK_WEIGHTS``.
+        status_scores: Status-to-score overrides (from TuningProfile).
+            Defaults to module-level ``_STATUS_SCORES``.
 
     Returns:
         Confidence score between 0.0 and 100.0.
@@ -72,14 +82,17 @@ def compute_confidence(checks: list[CheckResult]) -> float:
     if not checks:
         return 0.0
 
+    w_map = weights if weights is not None else _CHECK_WEIGHTS
+    s_map = status_scores if status_scores is not None else _STATUS_SCORES
+
     total_score = 0.0
     total_weight = 0.0
 
     # Weight for checks not in the predefined map
-    known_names = set(_CHECK_WEIGHTS.keys())
+    known_names = set(w_map.keys())
     unknown_checks = [c for c in checks if c.check_name not in known_names]
     known_weight_sum = sum(
-        _CHECK_WEIGHTS[c.check_name]
+        w_map[c.check_name]
         for c in checks
         if c.check_name in known_names
     )
@@ -91,8 +104,8 @@ def compute_confidence(checks: list[CheckResult]) -> float:
     )
 
     for check in checks:
-        weight = _CHECK_WEIGHTS.get(check.check_name, unknown_weight)
-        score = _STATUS_SCORES.get(check.status, 0.0)
+        weight = w_map.get(check.check_name, unknown_weight)
+        score = s_map.get(check.status, 0.0)
         total_score += weight * score
         total_weight += weight
 
@@ -144,6 +157,7 @@ def verify_sql(
     checks: list[CheckProtocol] | None = None,
     attempt_number: int = 1,
     fail_fast: bool = False,
+    profile: TuningProfile | None = None,
 ) -> VerificationResult:
     """Run all verification checks and compute confidence score.
 
@@ -156,6 +170,8 @@ def verify_sql(
         checks: Optional list of check instances. Defaults to all 6 checks.
         attempt_number: Which retry attempt this is (1-based).
         fail_fast: If True, stop on first FAILED check.
+        profile: Optional tuning profile for weights/thresholds.
+            When None the built-in defaults are used.
 
     Returns:
         VerificationResult with all check results and confidence score.
@@ -188,12 +204,25 @@ def verify_sql(
             )
             break
 
-    confidence = compute_confidence(results)
+    # Use profile overrides when provided, else module-level defaults
+    if profile is not None:
+        confidence = compute_confidence(
+            results,
+            weights=profile.check_weights,
+            status_scores={
+                CheckStatus[k]: v
+                for k, v in profile.status_scores.items()
+            },
+        )
+        threshold = profile.verified_threshold
+    else:
+        confidence = compute_confidence(results)
+        threshold = _VERIFIED_THRESHOLD
 
     return VerificationResult(
         sql=sql,
         checks=results,
         confidence_score=confidence,
-        is_verified=confidence >= _VERIFIED_THRESHOLD,
+        is_verified=confidence >= threshold,
         attempt_number=attempt_number,
     )

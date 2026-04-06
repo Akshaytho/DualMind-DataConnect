@@ -157,6 +157,11 @@ def scan(
     help="LLM API key (or set DATACONNECT_API_KEY env var).",
 )
 @click.option("--no-retry", is_flag=True, help="Skip fix-and-retry loop.")
+@click.option(
+    "--profile", "-p",
+    default=None,
+    help="Tuning profile: preset name (default/strict/lenient) or JSON path.",
+)
 @click.pass_context
 def ask(
     ctx: click.Context,
@@ -165,6 +170,7 @@ def ask(
     model: str,
     api_key: str,
     no_retry: bool,
+    profile: str | None,
 ) -> None:
     """Ask a question about a scanned database.
 
@@ -175,8 +181,19 @@ def ask(
     from dataconnect.models import QueryResult
     from dataconnect.router import route_query
     from dataconnect.storage import StorageBackend
+    from dataconnect.tuning import TuningError, get_profile
     from dataconnect.verifier import verify_sql
     from dataconnect.verifier.retry import retry_with_fixes
+
+    # Step 0: Load tuning profile
+    try:
+        tuning = get_profile(profile)
+    except TuningError as exc:
+        click.echo(f"Invalid profile: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+    if profile is not None:
+        click.echo(f"Using tuning profile: {tuning.name}")
 
     # Step 1: Load scan result
     try:
@@ -202,6 +219,7 @@ def ask(
             scan_result,
             llm_model=model,
             llm_api_key=api_key,
+            top_k=tuning.router_top_k,
         )
     except RoutingError as exc:
         click.echo(f"Routing failed: {exc}", err=True)
@@ -228,7 +246,7 @@ def ask(
 
     try:
         if no_retry:
-            verification = verify_sql(sql, context)
+            verification = verify_sql(sql, context, profile=tuning)
         else:
             verification = retry_with_fixes(
                 sql,
@@ -236,6 +254,8 @@ def ask(
                 context,
                 model=model,
                 api_key=api_key,
+                max_attempts=tuning.max_retry_attempts,
+                profile=tuning,
             )
     except DataConnectError as exc:
         click.echo(f"Verification failed: {exc}", err=True)

@@ -18,6 +18,7 @@ from dataconnect.models import (
     ScanResult,
     VerificationResult,
 )
+from dataconnect.tuning import TuningProfile
 from dataconnect.verifier import verify_sql
 
 logger = logging.getLogger(__name__)
@@ -195,6 +196,7 @@ def retry_with_fixes(
     model: str,
     api_key: str,
     max_attempts: int = _MAX_ATTEMPTS,
+    profile: TuningProfile | None = None,
 ) -> VerificationResult:
     """Run verify → fix → re-verify loop up to max_attempts times.
 
@@ -241,6 +243,7 @@ def retry_with_fixes(
             current_sql,
             context,
             attempt_number=attempt,
+            profile=profile,
         )
 
         # Track best result by confidence score

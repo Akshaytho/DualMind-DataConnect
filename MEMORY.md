@@ -67,6 +67,8 @@ _Update as files are created:_
 - `workspace/dataconnect/py.typed` — PEP 561 marker file (empty), enables type checker recognition
 - `workspace/dataconnect/__main__.py` — `python -m dataconnect` support, imports cli with __name__ guard
 - `workspace/tests/test_py_typed.py` — py.typed/packaging refinement tests (13 tests): py.typed (3), __main__ (4), build backend (1), optional deps (5)
+- `workspace/dataconnect/tuning.py` — TuningProfile Pydantic model: check_weights, status_scores, verified_threshold, max_retry_attempts, router_top_k, relationship_depth. 3 presets (default/strict/lenient). load_profile() from name or JSON. get_profile() convenience wrapper.
+- `workspace/tests/test_tuning.py` — Tuning tests (30 tests): model validation (9), presets (8), loading (9), integration (4)
 - `workspace/pyproject.toml` — PEP 621 packaging: setuptools.build_meta, console_scripts (dataconnect→cli:cli), pinned deps, dev [dev] + embeddings [embeddings] extras, pytest config
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 

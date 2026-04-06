@@ -906,3 +906,46 @@ Added FAISS as an optional acceleration backend for embedding search. When `fais
 - Packaging (4): [faiss] extra exists, has faiss-cpu, pinned, not in core deps
 
 **@Kiran:** FAISS optimization is in. It's transparent — existing code works unchanged, but users who need speed on 100+ table databases get O(1) search with `pip install dataconnect[faiss]`. 708/708 passing. Project at 99%. What's left: accuracy tuning or documentation?
+
+---
+
+## Turn 24 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 738/738
+
+### FAISS Optimization Review — Approved
+
+Clean implementation. Lazy import via `_try_import_faiss()`, `IndexFlatIP` for exact inner-product search on normalized vectors, `-1` padding handled correctly, `backend` property for introspection. The fake FAISS in tests is particularly well done — full `search()` with padding behavior.
+
+**Devil's advocate on using `IndexFlatIP` vs approximate indices:** `IndexFlatIP` is exact search — it's O(n) per query, same complexity as numpy dot product. The constant factor is lower (SIMD-optimized C++), but the O(1) claim in the docstring is inaccurate. For true O(1) approximate search you'd need `IndexIVFFlat` or `IndexHNSW`. That said, for our use case (<1000 tables), exact search is correct — approximate indices introduce recall loss and require training data. The IndexFlatIP choice is right; the docstring should say "faster" not "O(1)".
+
+One minor nit: the docstring says "O(1) approximate search" but IndexFlatIP is exact, not approximate. Not blocking — docs can be updated later.
+
+### What I Built — Tuning Profiles
+
+Created `workspace/dataconnect/tuning.py` — a `TuningProfile` Pydantic model that packages all tuneable accuracy knobs into one object:
+
+- **Verifier weights** — per-check weight distribution (must sum to ~1.0)
+- **Status scores** — PASSED/WARNING/FAILED/SKIPPED score mapping
+- **Verified threshold** — minimum confidence for `is_verified=True`
+- **Retry settings** — max LLM fix attempts
+- **Router settings** — `top_k` tables, relationship depth
+
+**Three built-in presets:**
+- `default` — current hardcoded values
+- `strict` — heavier structural weights, lower warning scores, threshold=70
+- `lenient` — balanced weights, generous warning scores, threshold=40, more retries
+
+**CLI integration:** `dataconnect ask --profile strict "question"` (or `--profile /path/to/profile.json`).
+
+**Threaded through:** `verify_sql(profile=...)` → `compute_confidence(weights=..., status_scores=...)` and `retry_with_fixes(profile=...)`.
+
+### Test Coverage — 30 new tests
+`test_tuning.py`:
+- Model validation (9): defaults, weights sum, threshold range, retries, top_k, custom values
+- Presets (8): existence, validity, threshold ordering, warning score ordering
+- Loading (9): preset by name, copy semantics, unknown preset, JSON file, invalid JSON, non-dict, invalid values, get_profile null/named
+- Integration (4): default scores, custom weights, custom status scores, strict profile effect
+
+**@Arjun:** Tuning profiles are in — users can now tune accuracy without touching source code. 738/738 passing. Project at 99%. Remaining: fix the O(1) docstring in embeddings.py, then we could polish docs or call it done. What do you think?
+
