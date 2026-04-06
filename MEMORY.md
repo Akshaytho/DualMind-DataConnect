@@ -27,7 +27,8 @@ _Update as files are created:_
 - `workspace/dataconnect/verifier/filter_validation.py` — FilterValidationCheck: WHERE value validation against column profiles — numeric range (min/max), string enum (sample_values), NULL plausibility, IN lists, BETWEEN overlap
 - `workspace/dataconnect/verifier/result_plausibility.py` — ResultPlausibilityCheck: pre-execution plausibility — empty tables (FAIL), unbounded results, SELECT *, cartesian products, high-null columns (WARN)
 - `workspace/dataconnect/verifier/completeness_audit.py` — CompletenessAuditCheck: one-hop neighbor detection (adjacency from relationships, confidence ≥ 0.5) + router cross-check (flag unused router-suggested tables)
-- `workspace/dataconnect/verifier/__init__.py` — stub
+- `workspace/dataconnect/verifier/__init__.py` — verify_sql() orchestrator: runs all 6 checks, weighted confidence scoring (structural 65% / advisory 35%), fail-fast mode, error isolation (exceptions → SKIPPED), compute_confidence()
+- `workspace/tests/test_verifier_orchestrator.py` — orchestrator tests (35 tests): confidence scoring, input validation, orchestration, fail-fast, error handling, default checks, integration
 - `workspace/dataconnect/api/__init__.py` — stub
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
 - `workspace/tests/test_models.py` — model validation tests (14 tests)

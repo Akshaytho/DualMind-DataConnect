@@ -508,3 +508,42 @@ Key helpers: `_extract_used_tables` (alias + FROM + JOIN parsing), `_build_adjac
 - Protocol compliance (2), context validation (2), extract used tables (5), build adjacency (5), find missing neighbors (5), router suggestions (5), full integration (11)
 
 **@Kiran:** All 6 verifier checks complete! Next up: verifier orchestrator — run all checks, compute confidence score, aggregate into VerificationResult. I suggest you take that since it ties together all the checks you and I built. Then I'll build the confidence scoring logic.
+
+---
+
+## Turn 14 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 445/445
+
+### Completeness Audit Review (Check 6) — Approved
+
+Clean design. WARNING-only for missing tables is correct — these are suggestions, not errors. One-hop limit avoids noise. Router cross-check is a nice touch for catching router→SQL disagreement. **Devil's advocate on `_CONFIDENCE_THRESHOLD = 0.5`:** this silently ignores value-overlap relationships that could be legitimately relevant (e.g., shared enum columns). **Why I approved anyway:** value-overlap at 0.3-0.5 confidence is genuinely speculative — flagging those as "missing" would generate too many false warnings. The threshold is conservative in the right direction.
+
+### What I Built — `verifier/__init__.py` (Verifier Orchestrator)
+
+`verify_sql()` — main entry point for the verifier layer. Runs all 6 checks and aggregates into `VerificationResult` with weighted confidence scoring.
+
+**Core functions:**
+1. **`verify_sql(sql, context, checks, attempt_number, fail_fast)`** — orchestrates check execution, computes confidence, returns VerificationResult
+2. **`compute_confidence(checks)`** — weighted scoring: structural checks (schema/join/aggregation) weighted 0.25/0.20/0.20, advisory checks (filter/plausibility/completeness) weighted 0.15/0.10/0.10
+3. **`_run_single_check(check, sql, context)`** — error isolation: exceptions → SKIPPED (never crashes pipeline)
+
+**Design decisions:**
+- **Weighted scoring** — structural checks (1-3) contribute 65% of confidence, advisory checks (4-6) contribute 35%. Reflects that schema/join errors are blockers while filter/plausibility issues are suggestions.
+- **Status scores** — PASSED=100, WARNING=60, FAILED=0, SKIPPED=50. SKIPPED gets partial credit (check couldn't run ≠ check found problems).
+- **Fail-fast mode** — optional early exit on first FAILED check (useful for retry loops where fixing one error at a time is cheaper).
+- **Error isolation** — any check that raises gets SKIPPED, others continue. One broken check never blocks verification.
+- **is_verified threshold** — confidence ≥ 50% (from TASK.md). Below 50% → marked unverified.
+- **Extensible** — custom checks via `checks` parameter. Unknown check names get equal share of remaining weight.
+
+### Test Coverage — 35 new tests
+`test_verifier_orchestrator.py`:
+- Confidence scoring (9): empty, all-passed, all-failed, all-warnings, all-skipped, mixed, single, unknown names, structural vs advisory weighting
+- Input validation (4): empty SQL, whitespace SQL, missing scan_result, wrong context key
+- Orchestration (8): returns VerificationResult, all checks run, order preserved, attempt_number, sql preserved, confidence in result, verified/unverified flags
+- Fail-fast (3): stops on failure, continues on warning, disabled runs all
+- Error handling (3): exploding check → SKIPPED, doesn't block others, SKIPPED ≠ FAILED for fail-fast
+- Default checks (4): count, protocol compliance, unique names, weight coverage
+- Integration (4): valid query, invalid table, join query, verified flag matches threshold
+
+**@Arjun:** Verifier orchestrator done. All 6 checks wired up, weighted confidence scoring in place. Next logical step: the confidence scoring refinements you mentioned, or we could move to the fix-and-retry loop (TASK.md says "failed checks → fix-and-retry loop, max 3 attempts"). I think retry loop is higher priority — it's the last piece before Layer 3 is complete. Your call on which to take.
