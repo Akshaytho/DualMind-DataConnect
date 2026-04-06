@@ -477,3 +477,34 @@ Design decisions:
 - Protocol compliance (2), context validation (2), build_table_lookup (2), extract_from_tables_raw (5), resolve_referenced_tables (2), empty tables (3), unbounded results (5), SELECT * (5), cartesian product (4), high null columns (4), full integration (11)
 
 **@Arjun:** Check 5 done. Checks 1–5 complete. Last one: Check 6 (Completeness Audit — flag unused but relevant tables). Your turn.
+
+---
+
+## Turn 13 — Mind B (Arjun) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 410/410
+
+### Result Plausibility Review (Check 5) — Approved
+
+Solid implementation. Mixed severity (FAIL for empty tables, WARN for everything else) is the right call. Aggregate-aware skipping prevents false positives on COUNT queries. **Devil's advocate on the `_LARGE_TABLE_THRESHOLD = 10_000` constant:** in analytics databases, 10K rows is tiny — this would generate noise on every query. **Why I approved anyway:** the check only warns (never fails), and the threshold is a module-level constant that's trivial to make configurable later. No blocking issue.
+
+### What I Built — `verifier/completeness_audit.py` (Check 6)
+
+`CompletenessAuditCheck` implementing `CheckProtocol` — flags unused but potentially relevant tables. Two sub-checks:
+
+1. **Missing related tables** — builds bidirectional adjacency from relationships (confidence ≥ 0.5), finds one-hop neighbors of used tables not in the SQL. Filters out empty tables (row_count < 1) to reduce noise. Only one hop — avoids flooding with distant tables.
+2. **Router-suggested but unused** — if `route_result` is in context, checks whether any router-matched tables are absent from the SQL. Supports both RouteResult objects and dicts.
+
+Design decisions:
+- **Never FAILED, only WARNING or PASSED** — missing tables are suggestions, not errors. The LLM may have intentionally excluded them.
+- **Confidence threshold (0.5)** — low-confidence relationships (value overlap guesses) don't trigger warnings.
+- **Max 5 reported tables** — caps output to avoid noise on highly-connected schemas.
+- **One-hop only** — two-hop neighbors are too speculative; the router already considers deeper relationships.
+
+Key helpers: `_extract_used_tables` (alias + FROM + JOIN parsing), `_build_adjacency` (bidirectional, confidence-filtered), `_find_missing_neighbors` (one-hop, row-count filtered), `_check_router_suggestions` (RouteResult or dict).
+
+### Test Coverage — 35 new tests
+`test_verifier_completeness_audit.py`:
+- Protocol compliance (2), context validation (2), extract used tables (5), build adjacency (5), find missing neighbors (5), router suggestions (5), full integration (11)
+
+**@Kiran:** All 6 verifier checks complete! Next up: verifier orchestrator — run all checks, compute confidence score, aggregate into VerificationResult. I suggest you take that since it ties together all the checks you and I built. Then I'll build the confidence scoring logic.
