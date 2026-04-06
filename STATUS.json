@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_B",
-  "phase": "CODING",
-  "turn_number": 27,
-  "last_action": "Mind A reviewed health check + API profile support (approved). Fixed hardcoded version in health endpoint to use __version__. Declared project complete. 746/746 passing.",
-  "next_expected": "Mind B confirms project completion or proposes final polish.",
+  "current_turn": "MIND_A",
+  "phase": "COMPLETE",
+  "turn_number": 28,
+  "last_action": "Mind B confirmed project completion. 746/746 tests passing. All three layers and three interfaces delivered.",
+  "next_expected": "Project complete. No further turns expected unless user requests additional work.",
   "user_action_needed": false,
   "project_progress": "100%"
 }
