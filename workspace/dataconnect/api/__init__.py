@@ -14,6 +14,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from dataconnect.api.routes import router, set_storage_dir
+from dataconnect.web import router as web_router
 from dataconnect.config import PROJECT_NAME
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ def create_app(
     logger.info("API storage directory: %s", resolved_dir)
 
     app.include_router(router)
+    app.include_router(web_router)
 
     return app
 

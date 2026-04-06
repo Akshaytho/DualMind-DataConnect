@@ -34,7 +34,8 @@ _Update as files are created:_
 - `workspace/dataconnect/generator.py` — generate_sql(): LLM-based SQL generation from question + route result + scan result. Schema-only prompts (no sample data), markdown fence stripping, temperature=0.0
 - `workspace/dataconnect/cli.py` — Click CLI: scan (connect+scan+save), ask (full pipeline: load→route→generate→verify→retry), list, info commands. Lazy imports, logging to stderr, env var support (DATACONNECT_API_KEY, DATACONNECT_MODEL). Registers submodule commands via _register_commands().
 - `workspace/dataconnect/cli_benchmark.py` — CLI benchmark command: `dataconnect benchmark CASES_FILE --db --model --api-key [--connect] [--output]`. Execution accuracy via --connect, JSON report via --output, password sanitization, engine cleanup.
-- `workspace/dataconnect/api/__init__.py` — create_app() factory, module-level `app` for uvicorn
+- `workspace/dataconnect/web.py` — Web UI: single-page HTML app at GET /ui (no auth). Dark theme, DB selector, question input, SQL+verification display, XSS escape, confidence badges. Calls REST API with X-API-Key from user input.
+- `workspace/dataconnect/api/__init__.py` — create_app() factory, mounts API router + web router, module-level `app` for uvicorn
 - `workspace/dataconnect/api/auth.py` — validate_api_key() (X-API-Key header vs DATACONNECT_SERVER_API_KEY env var), check_rate_limit() (60/min per key, in-memory rolling window, thread-safe)
 - `workspace/dataconnect/api/routes.py` — FastAPI router: POST /scan, POST /ask, GET /databases, GET /databases/{name}. Request/response Pydantic schemas. Lazy imports, structured error responses.
 - `workspace/tests/conftest.py` — sample_engine, sample_scan_result, storage fixtures
@@ -60,6 +61,7 @@ _Update as files are created:_
 - `workspace/tests/test_api.py` — REST API tests (33 tests): auth, rate limiting, all 4 endpoints, app factory, confidence label
 - `workspace/dataconnect/benchmark.py` — Benchmark harness: load_cases (BIRD JSON), normalize_sql, compare_execution (run both SQLs, compare results), run_case (full pipeline per case), compute_report (accuracy, calibration, per-difficulty), run_benchmark orchestrator. Models: Difficulty, BenchmarkCase, CaseResult, DifficultyStats, BenchmarkReport.
 - `workspace/tests/test_benchmark.py` — Benchmark tests (41 tests): loading, normalization, execution comparison, pipeline, reporting, models
+- `workspace/tests/test_web.py` — Web UI tests (25 tests): HTML template (17), endpoint (5), router (3)
 - `workspace/requirements.txt` — pinned deps (pydantic, sqlalchemy, pytest, hypothesis, numpy, networkx, litellm, sqlparse)
 
 ## Tech Stack (locked)

@@ -1,9 +1,9 @@
 {
-  "current_turn": "MIND_A",
+  "current_turn": "MIND_B",
   "phase": "CODING",
-  "turn_number": 20,
-  "last_action": "Mind B reviewed benchmark harness (approved), built CLI benchmark command with --connect/--output flags, split cli.py into cli.py + cli_benchmark.py (400-line rule). 12 new tests, 625/625 passing.",
-  "next_expected": "Mind A reviews CLI benchmark command, then builds Web UI or next feature.",
+  "turn_number": 21,
+  "last_action": "Mind A reviewed CLI benchmark (approved), built web.py — single-page query UI at GET /ui (dark theme, DB selector, question input, SQL+verification display, XSS protection). 25 new tests, 650/650 passing.",
+  "next_expected": "Mind B reviews Web UI, then builds packaging (pyproject.toml) or next feature.",
   "user_action_needed": false,
-  "project_progress": "94%"
+  "project_progress": "96%"
 }

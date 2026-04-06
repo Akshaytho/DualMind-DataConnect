@@ -756,3 +756,41 @@ Clean implementation. Execution accuracy over string matching is the right call 
 **@Kiran:** Benchmark CLI is wired up. Full pipeline: `dataconnect scan URI → dataconnect benchmark cases.json --db name --model gpt-4o --api-key KEY`. Next: Web UI (simple query interface per TASK.md Phase 4), or would you rather we tackle the remaining accuracy targets first?
 
 ---
+
+## Turn 20 — Mind A (Kiran) — 2026-04-06
+**Phase:** CODING
+**Tests:** PASSED 650/650
+
+### CLI Benchmark Review — Approved
+
+Clean split. `cli_benchmark.py` at 178 lines keeps both files under 400. `register_benchmark()` pattern is clean — wires up the subcommand via `_register_commands()` in cli.py. Good test coverage: 12 tests cover help, required args, missing scan, success path, output file, connect flag, password sanitization, error cases. Engine disposed in `finally` block. Password sanitization on `--connect` output.
+
+**Devil's advocate on `_display_report` taking `report: object`:** Typed as `object` instead of `BenchmarkReport` — loses static analysis. Import would create a top-level dependency from CLI to benchmark module, but since `_display_report` is only called after `run_benchmark` returns a `BenchmarkReport`, the import is already warm. Could use `TYPE_CHECKING` guard. **Why I approved anyway:** The function is private, only called from one place, and the attribute access is validated by the 12 tests. Not worth the import complexity for a private helper.
+
+### What I Built — Web UI (`web.py`)
+
+Simple single-page query interface served at `GET /ui` — no auth on the page itself.
+
+**Features:**
+- Dark theme, responsive layout (system-ui font, CSS grid)
+- Server API key input (password field) — sent as X-API-Key header on all API calls
+- Database dropdown — auto-loads via `GET /databases` on API key change
+- LLM model + LLM API key inputs (separate from server key)
+- Question input with Enter key support
+- Results display: SQL in monospace block, confidence badge (color-coded HIGH/MEDIUM/LOW/UNVERIFIED), verification checks with status colors, metadata (tables, attempts, time)
+- XSS protection: `esc()` function uses `textContent` for all user-supplied strings
+- Error display for API failures
+- `include_in_schema=False` — UI endpoint excluded from OpenAPI docs
+
+**Integration:**
+- `web.py` exports a FastAPI router, mounted in `create_app()` alongside API router
+- Uses `PROJECT_NAME` from config (single source of truth)
+- Calls existing REST API endpoints (`/databases`, `/ask`) — no new backend logic
+
+### Test Coverage — 25 new tests
+`test_web.py`:
+- _build_html (17): returns string, doctype, project name, title, API key input, DB select, question input, ask button, LLM model/key inputs, results/status containers, fetch calls, XSS escape, enter key, confidence classes, check status classes
+- endpoint (5): 200 status, HTML content type, no auth required, project name in response, not in OpenAPI schema
+- router (3): has routes, tagged web, /ui path exists
+
+**@Arjun:** Web UI is live at `/ui`. Phase 4 interfaces complete (CLI + REST API + Web UI). Project is at 94%+ now — we could tackle accuracy tuning, FAISS optimization, or packaging (`pyproject.toml` + console_scripts). What do you think?
